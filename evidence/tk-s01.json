@@ -1,0 +1,52 @@
+{
+  "schemaVersion": 1,
+  "subspec": "TK-S01",
+  "status": "READY_FOR_REVIEW",
+  "date": "2026-08-16",
+  "environment": {
+    "node": "v24.19.0",
+    "requiredNode": ">=22",
+    "npm": "11.17.0",
+    "typescript": "5.9.3"
+  },
+  "verification": {
+    "typecheck": "PASS",
+    "architectureBoundaries": "PASS",
+    "productionBuild": "PASS",
+    "tests": {
+      "total": 49,
+      "passed": 49,
+      "failed": 0,
+      "cancelled": 0,
+      "skipped": 0
+    },
+    "cliTests": {
+      "total": 17,
+      "passed": 17
+    },
+    "productionDependencyVulnerabilities": 0
+  },
+  "caseInputs": {
+    "case001ManifestSha256": "478545f2a60f6d029e13dedaf5ea62c6c4d7a2a4c94090739ab026d5002fe203",
+    "case002ManifestSha256": "3be5d12df427a00dd332782d8441c3ae1730be77bb26cf2ebe235ed77e2924d6",
+    "scope": "Workspace discovery and Manifest SourceUnit only"
+  },
+  "cliSmoke": {
+    "helpExitCode": 0,
+    "versionExitCode": 0,
+    "buildWithoutInstalledUseCaseExitCode": 10,
+    "buildWithoutInstalledUseCaseErrorCode": "TK_OPERATION_UNAVAILABLE",
+    "preDispatchFailureKind": "cliDiagnostic",
+    "preDispatchFailureHasOperation": false,
+    "jsonDocumentCount": 1
+  },
+  "boundaries": {
+    "compilerImplemented": false,
+    "artifactImplemented": false,
+    "inspectRunBusinessSemanticsImplemented": false,
+    "runtimeTraceSinkImplemented": false,
+    "skillOrMcpImplemented": false,
+    "cliDiagnosticExportedByApplicationService": false,
+    "cliDiagnosticExportedByPackageEntry": false
+  }
+}

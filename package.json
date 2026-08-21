@@ -1,0 +1,36 @@
+{
+  "name": "@quickapp-kit/toolkit",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "quickapp": "./dist/cli/bin.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "build:test": "tsc -p tsconfig.test.json",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "node scripts/check-boundaries.mjs",
+    "pretest": "npm run build:test",
+    "test": "node scripts/run-tests.mjs",
+    "test:cli": "node scripts/run-tests.mjs cli"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "ajv": "^8.17.1",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "acorn": "8.18.0",
+    "jsonc-parser": "3.3.1",
+    "parse5": "8.0.1",
+    "postcss": "8.5.26",
+    "postcss-less": "6.0.0"
+  }
+}

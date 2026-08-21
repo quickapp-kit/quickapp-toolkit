@@ -1,0 +1,147 @@
+{
+  "status": "PASS",
+  "case": "quickapp-code-test1",
+  "sourceManifest": "quickapp-examples/quickapp-code-test1/src/manifest.json",
+  "packagePath": "evidence/tk-s07-case001.rpk",
+  "packageByteLength": 25352,
+  "packageSha256": "6bab1eb0899e4871fca68fe83205de971efcbdcca8c2629eed6cb8e682f5797c",
+  "memberCount": 19,
+  "members": [
+    {
+      "path": "META-INF/quickapp-kit/source-maps/app.js.map",
+      "mediaType": "application/json",
+      "byteLength": 144,
+      "sha256": "79d815e268f3331d02517f2d40797a01780674bea5a3956c196360d065dff019"
+    },
+    {
+      "path": "META-INF/quickapp-kit/source-maps/pages/pages/Demo/index.js.map",
+      "mediaType": "application/json",
+      "byteLength": 336,
+      "sha256": "0ee291a9f56e07fe74398fac224eb4a7e0bf773e34b6ccf1fbf55bf8e7a1444c"
+    },
+    {
+      "path": "META-INF/quickapp-kit/source-maps/pages/pages/DemoDetail/index.js.map",
+      "mediaType": "application/json",
+      "byteLength": 343,
+      "sha256": "dd18c627608e1c15fe908652048082823256f3966da7481ace32e88d854ca47d"
+    },
+    {
+      "path": "META-INF/quickapp-kit/source-maps/shared/31d4851dc88ea63a12ff949dc57de9cc523f902fe993fc3545050130cd1a9296.js.map",
+      "mediaType": "application/json",
+      "byteLength": 200,
+      "sha256": "d3c6867e517633fa7c09ba02cbccd8f58640d4f7c377fd701d9da2e865df0614"
+    },
+    {
+      "path": "META-INF/quickapp-kit/source-maps/shared/357a0736958087965554a7cc57c8067ff5c571fb5830d4c4b8433ddd4a48f147.js.map",
+      "mediaType": "application/json",
+      "byteLength": 191,
+      "sha256": "6ca7b5ab20195fcd007f00640058681868ca6da26ae3d026acaebc074bb9b1ab"
+    },
+    {
+      "path": "META-INF/quickapp-kit/source-maps/shared/4c03b75b34301513dbb3e08a7f32fd46c5b1b0051de428b57cba027885debefb.js.map",
+      "mediaType": "application/json",
+      "byteLength": 188,
+      "sha256": "2105bf48436e8ad5267a1aba5444b61f638b6fc14896834854fab81e2d40e398"
+    },
+    {
+      "path": "META-INF/quickapp-kit/source-maps/shared/c1aa1454b80fb3db3d4b2c82368a056e981b581ebce51c5f02df380af49b5dea.js.map",
+      "mediaType": "application/json",
+      "byteLength": 186,
+      "sha256": "fb13739ef6d4b866554264b23384f8e9f9cb8a1fab50c66d31ad0b057b927866"
+    },
+    {
+      "path": "app.js",
+      "mediaType": "application/javascript",
+      "byteLength": 673,
+      "sha256": "08b1f55ff431a624559e85e328316b6c1461a5f60025161e5c9eea07413d0656"
+    },
+    {
+      "path": "assets/images/logo.png",
+      "mediaType": "image/png",
+      "byteLength": 3106,
+      "sha256": "637df6d5db5115c774dad7510a20d60cf80feeb55cdcf5b522bb73e0bc557023"
+    },
+    {
+      "path": "manifest.json",
+      "mediaType": "application/json",
+      "byteLength": 853,
+      "sha256": "e11901a6abd3e3f9f4b1a560eaa22587043a4a62984c695abada2ac5cce906bc"
+    },
+    {
+      "path": "pages/pages/Demo/index.js",
+      "mediaType": "application/javascript",
+      "byteLength": 2589,
+      "sha256": "bacd890170a393f8ff0579b8bd8f558a7fc04de2b35833aa5f15909bbb5b0a33"
+    },
+    {
+      "path": "pages/pages/DemoDetail/index.js",
+      "mediaType": "application/javascript",
+      "byteLength": 2203,
+      "sha256": "1e751ba6251c7c02b856128b5a679d825b8cc3b48fb527e92f6fc8f222e6ed8c"
+    },
+    {
+      "path": "quickapp-kit/pages/pages/Demo/index.ir.json",
+      "mediaType": "application/json",
+      "byteLength": 1140,
+      "sha256": "5549aea159c0d01623702dcefea90cf9257475f78dda63426bec8f31b2909196"
+    },
+    {
+      "path": "quickapp-kit/pages/pages/DemoDetail/index.ir.json",
+      "mediaType": "application/json",
+      "byteLength": 2896,
+      "sha256": "ee5b6ab9d1f6c1c42a62ab99b85c0e176e4e6c545c0fa88d9f92b8525e6e3030"
+    },
+    {
+      "path": "quickapp-kit/runtime.json",
+      "mediaType": "application/json",
+      "byteLength": 3164,
+      "sha256": "64d6da6c1f08338b56fcd3c1d90e5efdd0f1a465caf06e65860e704a433ed21a"
+    },
+    {
+      "path": "shared/31d4851dc88ea63a12ff949dc57de9cc523f902fe993fc3545050130cd1a9296.js",
+      "mediaType": "application/javascript",
+      "byteLength": 1665,
+      "sha256": "536177e66b95bc978a5115c0de2634d0b5dc2b5402d2cb95ada59d8eaa0ff3ef"
+    },
+    {
+      "path": "shared/357a0736958087965554a7cc57c8067ff5c571fb5830d4c4b8433ddd4a48f147.js",
+      "mediaType": "application/javascript",
+      "byteLength": 744,
+      "sha256": "8eb7fa2da96df1f85d7f443c24e0a4d563803b5c137ed84873edce39b1db304c"
+    },
+    {
+      "path": "shared/4c03b75b34301513dbb3e08a7f32fd46c5b1b0051de428b57cba027885debefb.js",
+      "mediaType": "application/javascript",
+      "byteLength": 451,
+      "sha256": "dbeea2981c18f8e55f4fef1105b9510bb2a7e7bc37b71977ad8987ed05720f2d"
+    },
+    {
+      "path": "shared/c1aa1454b80fb3db3d4b2c82368a056e981b581ebce51c5f02df380af49b5dea.js",
+      "mediaType": "application/javascript",
+      "byteLength": 546,
+      "sha256": "203c1722133ff3abe5e9d9a478ba01f1fe4879727fca3e4230c4d425a21feb69"
+    }
+  ],
+  "runtimeMetadataPath": "quickapp-kit/runtime.json",
+  "coreLoaderInput": "evidence/tk-s07-case001.rpk",
+  "coreLoaderChecks": [
+    "open",
+    "load_module:app",
+    "load_page_ir:/pages/Demo"
+  ],
+  "alphaCorrections": {
+    "pageVmRootState": [
+      "title"
+    ],
+    "bindingEvaluator": "String(this.title)",
+    "defineMetadataDependenciesExact": true,
+    "packageDependenciesOnly": true,
+    "sharedSelfDependencyRemoved": true,
+    "staticRequireContextExpanded": true,
+    "typedFacadeModuleId": "@app-module/system.*",
+    "typedFacadeExcludedFromPackageDependencies": true
+  },
+  "deterministicBuild": true,
+  "failureAtomicity": true,
+  "limitsAndCancellation": true
+}

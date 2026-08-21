@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "subspecs": ["TK-S02", "TK-S03"],
+  "status": "READY_FOR_REVIEW",
+  "date": "2026-08-17",
+  "environment": {
+    "node": "v24.19.0",
+    "requiredNode": ">=22",
+    "npm": "11.17.0",
+    "typescript": "5.9.3"
+  },
+  "parserDependencies": [
+    { "name": "jsonc-parser", "version": "3.3.1", "license": "MIT", "boundary": "JSON CST" },
+    { "name": "parse5", "version": "8.0.1", "license": "MIT", "boundary": "UX/HTML" },
+    { "name": "acorn", "version": "8.18.0", "license": "MIT", "boundary": "JavaScript" },
+    { "name": "postcss", "version": "8.5.26", "license": "MIT", "boundary": "CSS" },
+    { "name": "postcss-less", "version": "6.0.0", "license": "MIT", "boundary": "Less" }
+  ],
+  "verification": {
+    "typecheck": "PASS",
+    "architectureBoundaries": "PASS",
+    "productionBuild": "PASS",
+    "tests": { "total": 65, "passed": 65, "failed": 0, "cancelled": 0, "skipped": 0 },
+    "cliRegression": { "total": 17, "passed": 17 },
+    "determinism": "PASS",
+    "cancellation": "PASS",
+    "repeatedBuilds": { "iterations": 100, "status": "PASS" },
+    "contextCumulativeBudget": "PASS",
+    "sharedSourceOwnerPropagation": "PASS",
+    "runtimeDeepImmutability": "PASS"
+  },
+  "caseInputs": {
+    "case001ManifestSha256": "478545f2a60f6d029e13dedaf5ea62c6c4d7a2a4c94090739ab026d5002fe203",
+    "case002ManifestSha256": "3be5d12df427a00dd332782d8441c3ae1730be77bb26cf2ebe235ed77e2924d6",
+    "case001": {
+      "pages": 2,
+      "excludedWidgets": 1,
+      "sharedModules": 4,
+      "assets": 1,
+      "parsedReachableSources": 10,
+      "capabilities": {
+        "system.router": "required",
+        "system.prompt": "required",
+        "system.fetch": "deferred",
+        "system.shortcut": "declaredOnly"
+      }
+    },
+    "case002": { "pages": 1, "sharedModules": 0, "parsedReachableSources": 2 }
+  },
+  "boundaries": {
+    "singleSourceFrontendPortForClosure": true,
+    "s02ImportsSyntaxParsers": false,
+    "s03ResolvesTargets": false,
+    "loweringImplemented": false,
+    "emitterImplemented": false,
+    "artifactImplemented": false,
+    "tkS04Started": false
+  },
+  "sourceSummary": {
+    "file": "evidence/tk-s02-s03-source-summary.json",
+    "fileCount": 17,
+    "lineCount": 1852,
+    "aggregateSha256": "6fe4466c043d67d2eae695408089a71454dd734147bfe94b2ece9cb3394d61f8"
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "subspecs": ["TK-S02", "TK-S03"],
+  "date": "2026-08-17",
+  "scope": "src/compiler/**/*.ts sorted by POSIX path",
+  "algorithm": "SHA-256",
+  "fileCount": 17,
+  "lineCount": 1852,
+  "aggregateSha256": "6fe4466c043d67d2eae695408089a71454dd734147bfe94b2ece9cb3394d61f8",
+  "areas": {
+    "frontend": { "fileCount": 10, "lineCount": 1080 },
+    "manifest": { "fileCount": 3, "lineCount": 193 },
+    "moduleGraph": { "fileCount": 3, "lineCount": 516 },
+    "immutable": { "fileCount": 1, "lineCount": 63 }
+  },
+  "files": {
+    "src/compiler/frontend/feature-matrix.ts": "65038124d6448845ba4c134aedcb4e90d94c0367341523c5cba66ae63940e697",
+    "src/compiler/frontend/frontend-issue.ts": "db8833b0e43b1c8f858b4e3b4cbb4d395f1eff8ea833b1adc6229dc14e3df69b",
+    "src/compiler/frontend/index.ts": "769b5a1814190f663f4a5c51ddc7078f3cdb1abc9a20a832237bb63350f1f1db",
+    "src/compiler/frontend/javascript-parser.ts": "e244498bd6b04ec1ee14ee7eeafb3bde517203a894c9d51a324615d7253678dd",
+    "src/compiler/frontend/source-coordinate-map.ts": "18db3993541a8630d83252e2853ca976bb2ca7d7db5b976678d7476edea91629",
+    "src/compiler/frontend/source-frontend.ts": "2eeafd659126f899a3753335f0c6f35a2724a8de2d37cfde5789c509bf175655",
+    "src/compiler/frontend/style-parser.ts": "bd0284fabf2f640092617ed0a4cf970eae137ed65a2e6b67483e9dca547e920c",
+    "src/compiler/frontend/syntax-normalizer.ts": "3ded953aca0cbb59252b6334840456cffc3779f2823f4e1093a7b410166b37df",
+    "src/compiler/frontend/types.ts": "b1a8da6d0d57b6fc407357de44c58e7c9f68085a6be3b19cc588252f9ee0ab31",
+    "src/compiler/frontend/ux-parser.ts": "bc6abc9d73faf284c5de51350b75667f1b0e28bfdc2d6ea2de7499933979801a",
+    "src/compiler/immutable.ts": "77b730abba597f0e41072e6a74b873d027df83ccb3d3bf473e4eda6a5ffc1570",
+    "src/compiler/manifest/index.ts": "562fa8189c16428244d0424fb4594e609f51bec1ff1adbf827721af4a84ae8f7",
+    "src/compiler/manifest/manifest-parser.ts": "ef80512cda2d97fdbfada61c381e14cb3b2ba2642bb3d0b7332427104e0c4e75",
+    "src/compiler/manifest/types.ts": "72f2232750858041c0032ef6cba8f9981a5e85050a0df440358d137687e963df",
+    "src/compiler/module-graph/index.ts": "ba874ca19ec3ddf167dbe885bea315bbd73ba782c9863f3d95fd62aa10dadf4f",
+    "src/compiler/module-graph/module-graph-builder.ts": "b3c03d91404ff7c6896269875502be375d02661ff8bd9a6903bfd6c89f6f4dd5",
+    "src/compiler/module-graph/types.ts": "ef858d298434b98d0fd624c84b9483c632886b269fce68087a4cf2787c3eb8b6"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "phase": "W2 Alpha targeted correction",
+  "subspecs": ["TK-S04", "TK-S05", "TK-S06"],
+  "status": "READY_FOR_REVIEW",
+  "input": "CanonicalLoweredAppModel only",
+  "hashInput": "UTF-8 contents concatenated by logical artifact path",
+  "case001": {
+    "bundles": 7,
+    "pages": 2,
+    "jsGoldenSha256": "e2f52f17051c5045c227d425e569f35c8a1b12edf0e648b6decc7c43bc225880",
+    "pageIrGoldenSha256": "b13d75b43487d9d1909480881aadb1a7def1014d49c6116de446eb9c0a535848"
+  },
+  "case002": {
+    "bundles": 2,
+    "pages": 1,
+    "jsGoldenSha256": "4aba4a340ff02f584a48977d85597ff3b648fb49cb40fa5504e326286d564eff",
+    "pageIrGoldenSha256": "d4d8f3527e9f1ead0fb4eef705ce515d79205fff78f0444612050d935658afd1"
+  },
+  "verified": [
+    "Case 001 private.title is a Runtime Page VM root state",
+    "Case 001 title evaluator reads String(this.title)",
+    "App/Page/Shared define dependencies equal Canonical package dependencies",
+    "Package dependencies contain package modules only and no self dependency",
+    "static require.context expands to deterministic direct dependencies and $app_require$ calls",
+    "alliance @system.* imports normalize to @app-module/system.* typed facades",
+    "typed facades are excluded from Package dependencies",
+    "App/Page module.exports Definition and bootstrap rules remain valid",
+    "Page IR passes the public schemas and Template IDs are not reallocated",
+    "deterministic output, cancellation, budgets and failure atomicity remain valid"
+  ],
+  "commands": {
+    "typecheck": "npm run typecheck",
+    "lint": "npm run lint",
+    "build": "npm run build",
+    "tests": "npm test",
+    "cliTests": "npm run test:cli"
+  },
+  "result": "76/76 tests passed; CLI 17/17 passed; architecture boundaries passed"
+}

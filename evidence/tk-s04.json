@@ -1,0 +1,59 @@
+{
+  "schemaVersion": 1,
+  "subspec": "TK-S04",
+  "status": "READY_FOR_REVIEW",
+  "date": "2026-08-18",
+  "verification": {
+    "typecheck": "PASS",
+    "architectureBoundaries": "PASS",
+    "productionBuild": "PASS",
+    "tests": { "total": 71, "passed": 71, "failed": 0, "cancelled": 0, "skipped": 0 },
+    "cliRegression": { "total": 17, "passed": 17, "failed": 0 },
+    "case001": "PASS",
+    "case002": "PASS",
+    "determinism": { "iterations": 100, "status": "PASS" },
+    "deepImmutability": "PASS",
+    "cumulativeBudget": "PASS",
+    "cancellation": "PASS",
+    "noPartialResult": "PASS",
+    "sessionIsolation": "PASS",
+    "resourceBoundaries": "PASS"
+  },
+  "semanticCoverage": {
+    "host": ["div->View", "text->Text", "input[type=button]->Button"],
+    "style": ["import", "variable", "mixin", "arithmetic", "nesting", "cascade", "margin-shorthand", "canonical-host-values"],
+    "binding": ["interpolation", "concat", "displayString", "lexicalAliases", "single-target"],
+    "block": ["if", "keyed-for", "nearest-block-scope", "key-path"],
+    "event": ["onclick->click", "static-method-resolution", "single-target"],
+    "ids": ["TemplateNodeId", "TemplateBindingId", "TemplateBlockId", "TemplateHandlerId"]
+  },
+  "requirements": {
+    "R01-R05": "input immutability, closure pairing, source/hash validation, deterministic module facts",
+    "R06-R10": "Host and Style lowering with source diagnostics",
+    "R11-R13": "Binding evaluator, coercion, target and scope",
+    "R14-R16": "Block controllers, keyed aliases and nearest scope",
+    "R17-R19": "Event handler method resolution and target semantics",
+    "R20-R23": "four independent deterministic Template ID spaces",
+    "R24-R27": "single canonical model, deep freeze and downstream projection boundary",
+    "R28-R30": "diagnostic, cancellation and atomic result boundary",
+    "R31-R33": "cumulative budgets, resource limits and no cross-session mutable cache"
+  },
+  "boundaries": {
+    "s02S03InputsReadOnly": true,
+    "singleCanonicalLoweredModel": true,
+    "s05S06OnlyProjectModel": true,
+    "sourceAccessUsed": false,
+    "parserReimplemented": false,
+    "bundleEmitterImplemented": false,
+    "pageIrEmitterImplemented": false,
+    "artifactImplemented": false,
+    "tkS05Started": false,
+    "tkS06Started": false
+  },
+  "sourceSummary": {
+    "file": "evidence/tk-s04-source-summary.json",
+    "fileCount": 7,
+    "lineCount": 1407,
+    "aggregateSha256": "a8f5475a1f07c0f2d56eb413d7382d1781bc5a157acf3142adcd39780a7fece7"
+  }
+}

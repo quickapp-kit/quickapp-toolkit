@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "subspec": "TK-S04",
+  "date": "2026-08-18",
+  "scope": "src/compiler/lowering/**/*.ts sorted by POSIX path",
+  "algorithm": "SHA-256",
+  "fileCount": 7,
+  "lineCount": 1407,
+  "aggregateSha256": "a8f5475a1f07c0f2d56eb413d7382d1781bc5a157acf3142adcd39780a7fece7",
+  "files": [
+    { "path": "src/compiler/lowering/budget.ts", "bytes": 2371 },
+    { "path": "src/compiler/lowering/canonical-lowerer.ts", "bytes": 28343 },
+    { "path": "src/compiler/lowering/index.ts", "bytes": 158 },
+    { "path": "src/compiler/lowering/lowering-issue.ts", "bytes": 669 },
+    { "path": "src/compiler/lowering/style-lowerer.ts", "bytes": 21913 },
+    { "path": "src/compiler/lowering/syntax.ts", "bytes": 7950 },
+    { "path": "src/compiler/lowering/types.ts", "bytes": 6443 }
+  ]
+}

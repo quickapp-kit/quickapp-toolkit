@@ -1,0 +1,17 @@
+{
+  "scope": "Alpha Toolkit targeted correction: Canonical state, S05 Bundle dependencies, S07 Runtime Artifact",
+  "files": [
+    { "path": "src/compiler/lowering/types.ts", "sha256": "c5362ea5bad084d31abb899b72c408ff87636c5fc816ae769239cff0432a82d2" },
+    { "path": "src/compiler/lowering/syntax.ts", "sha256": "4872155840f7a970a981a9269d64bf1605438e38c54b9303d86abcc638452522" },
+    { "path": "src/compiler/lowering/canonical-lowerer.ts", "sha256": "cc6202d6080690feb9477140c5e9a26fa419e3f9eca14ff13a397e2df4761ff3" },
+    { "path": "src/compiler/emitter/types.ts", "sha256": "09de7206602530aadd4f0c93d174b901eadc609fa564b900e00c903d39942b72" },
+    { "path": "src/compiler/emitter/js-module-emitter.ts", "sha256": "14413130c79228a136804f0c420f3767d8e53a4ce4f09d279d81c84db688e788" },
+    { "path": "src/compiler/artifact/types.ts", "sha256": "aa87884798c62ddf1725fe8b3a95a6bb35532153b20fab7212d7f31b1291f752" },
+    { "path": "src/compiler/artifact/runtime-artifact-builder.ts", "sha256": "c58c9a2b069c5f5ee137f5f07262661ccdeeab9fd2e57f1916c7816deb9cb264" },
+    { "path": "test/integration/canonical-lowering.test.ts", "sha256": "828d08e0e352dd69e04d830591e5dd4267caf600b11605b0376284d4e9cf6dd8" },
+    { "path": "test/integration/emitters.test.ts", "sha256": "e1800ae7d526d7cb3c1d1a533bda8e6cb8b72fd51586c5068a5e423acd223fc0" },
+    { "path": "test/integration/runtime-artifact.test.ts", "sha256": "4ccaebd9d6caff4a0cace8f0635da06cbeea5bb2416f0c74965c1ef869df2c86" },
+    { "path": "scripts/check-boundaries.mjs", "sha256": "2cee84d568013666c3d0276efa69e86762913aa85d58f5087fde9813d518d6bf" }
+  ],
+  "lineCount": 2600
+}
