@@ -123,7 +123,58 @@ function emitBundle(module: CanonicalModuleEntry, page: CanonicalLoweredPageMode
       lines.push('    let revision = 0;')
       lines.push('    let sequence = 0;')
       lines.push('    const dirty = new Set();')
+      lines.push('    const blockDefinitions = arguments[3] || {};')
+    lines.push('    let activeBlocks = new Map();')
+    lines.push('    let activeBlockSlots = new Map();')
+    lines.push('    const blockGenerations = new Map();')
       lines.push('    let proxy;')
+    lines.push('    const blockSlot = function (definition, key) { return String(definition.templateBlockId) + "\\u0000" + String(key); };')
+    lines.push('    const blockInstanceId = function (definition, key, generation) { const base = "blk:" + context.surfaceId + "-" + String(definition.templateBlockId) + "-" + String(key).replace(/[^A-Za-z0-9_.-]/g, "_"); return generation === 1 ? base : base + "-g" + String(generation); };')
+      lines.push('    const collectBlocks = function () {')
+      lines.push('      const result = [];')
+      lines.push('      const dynamicOffsets = {};')
+      lines.push('      Object.keys(blockDefinitions).sort(function (a, b) { return Number(a) - Number(b); }).forEach(function (id) {')
+      lines.push('        const definition = blockDefinitions[id];')
+      lines.push('        const parentKey = String(definition.parentTemplateNodeId);')
+      lines.push('        const append = function (key, scope) { const offset = dynamicOffsets[parentKey] || 0; result.push({ definition: definition, key: key, scope: scope, index: definition.staticIndex + offset }); dynamicOffsets[parentKey] = offset + 1; };')
+      lines.push('        if (definition.kind === "if") {')
+      lines.push('          if (definition.evaluate.call(proxy, {})) append("if", {});')
+      lines.push('          return;')
+      lines.push('        }')
+      lines.push('        const items = definition.evaluate.call(proxy, {});')
+      lines.push('        if (!Array.isArray(items)) return;')
+      lines.push('        items.forEach(function (item, index) { const scope = {}; scope[definition.indexAlias] = index; scope[definition.itemAlias] = item; append(definition.key.call(proxy, scope), scope); });')
+      lines.push('      });')
+      lines.push('      return result;')
+      lines.push('    };')
+      lines.push('    const blockBindings = function (item) {')
+      lines.push('      const values = {};')
+      lines.push('      Object.keys(item.definition.bindings).forEach(function (id) { values[id] = item.definition.bindings[id].call(proxy, item.scope); });')
+      lines.push('      return values;')
+      lines.push('    };')
+      lines.push('    const reconcileBlocks = function (initial) {')
+      lines.push('      const nextBlocks = new Map();')
+      lines.push('      const operations = [];')
+      lines.push('      collectBlocks().forEach(function (item) {')
+    lines.push('        const slot = blockSlot(item.definition, item.key);')
+    lines.push('        const previousId = activeBlockSlots.get(slot);')
+    lines.push('        const previous = previousId === undefined ? undefined : activeBlocks.get(previousId);')
+    lines.push('        const generation = blockGenerations.get(slot) || 0;')
+    lines.push('        const id = previousId === undefined ? blockInstanceId(item.definition, item.key, generation + 1) : previousId;')
+    lines.push('        if (previousId === undefined) blockGenerations.set(slot, generation + 1);')
+    lines.push('        if (previous === undefined) {')
+    lines.push('          const handlers = item.definition.handlers.map(function (handler) { return { ownerInstanceId: id, templateHandlerId: handler.templateHandlerId, handlerId: "hdl:" + context.surfaceId + "-" + String(handler.templateHandlerId) + "-" + id }; });')
+    lines.push('          operations.push({ kind: "instantiateBlock", templateBlockId: item.definition.templateBlockId, blockInstanceId: id, parent: { ownerInstanceId: "cmp:" + context.surfaceId, templateNodeId: item.definition.parentTemplateNodeId }, index: item.index, key: item.key, initialBindings: blockBindings(item), handlers: handlers });')
+    lines.push('        } else if (!initial && previous.index !== item.index) {')
+      lines.push('          operations.push({ kind: "moveBlock", blockInstanceId: id, parent: { ownerInstanceId: "cmp:" + context.surfaceId, templateNodeId: item.definition.parentTemplateNodeId }, index: item.index });')
+      lines.push('        }')
+    lines.push('        nextBlocks.set(id, { definition: item.definition, key: item.key, scope: item.scope, index: item.index, slot: slot });')
+      lines.push('      });')
+      lines.push('      if (!initial) activeBlocks.forEach(function (previous, id) { if (!nextBlocks.has(id)) operations.push({ kind: "removeBlock", blockInstanceId: id }); });')
+    lines.push('      const nextSlots = new Map(); nextBlocks.forEach(function (value, id) { nextSlots.set(value.slot, id); });')
+    lines.push('      return { operations: operations, nextBlocks: nextBlocks, nextSlots: nextSlots };')
+    lines.push('    };')
+    lines.push('    const commitBlocks = function (nextBlocks, nextSlots) { activeBlocks = nextBlocks; activeBlockSlots = nextSlots; };')
       lines.push('    const flush = function () {')
       lines.push('      scheduled = false;')
       lines.push('      if (dirty.size === 0) return;')
@@ -133,19 +184,29 @@ function emitBundle(module: CanonicalModuleEntry, page: CanonicalLoweredPageMode
       lines.push('        if (binding === undefined) return;')
       lines.push('        operations.push({ kind: "updateBinding", ownerInstanceId: "cmp:" + context.surfaceId, templateBindingId: Number(id), value: binding.evaluate.call(proxy, {}) });')
       lines.push('      });')
+      lines.push('      const blocks = reconcileBlocks(false);')
+      lines.push('      blocks.operations.forEach(function (operation) { operations.push(operation); });')
+      lines.push('      if (operations.length === 0) return;')
       lines.push('      const nextRevision = revision + 1;')
-      lines.push('      const result = globalThis.$quickapp_runtime_v1_submitRenderTransaction$({ schemaVersion: 1, surfaceId: context.surfaceId, transactionId: "txn:" + context.surfaceId + "-" + String(++sequence), revision: nextRevision, operations: operations });')
-      lines.push('      if (result && result.ok === true) { revision = nextRevision; dirty.clear(); }')
+      lines.push('      const causalRequest = globalThis.$quickapp_current_request_id$;')
+      lines.push('      const message = { schemaVersion: 1, surfaceId: context.surfaceId, transactionId: "txn:" + context.surfaceId + "-" + String(++sequence), revision: nextRevision, operations: operations };')
+      lines.push('      if (typeof causalRequest === "string" && causalRequest.indexOf("req:") === 0) message.requestId = causalRequest;')
+      lines.push('      const result = globalThis.$quickapp_runtime_v1_submitRenderTransaction$(message);')
+    lines.push('      if (result && result.ok === true) { revision = nextRevision; dirty.clear(); commitBlocks(blocks.nextBlocks, blocks.nextSlots); }')
       lines.push('    };')
       lines.push('    proxy = new Proxy(target, {')
       lines.push('      set: function (object, property, value) {')
       lines.push('        object[property] = value;')
       lines.push('        const name = String(property);')
       lines.push('        Object.keys(bindings).forEach(function (id) { if (bindings[id].deps.indexOf(name) >= 0) dirty.add(id); });')
+      lines.push('        Object.keys(blockDefinitions).forEach(function (id) { if (blockDefinitions[id].deps.indexOf(name) >= 0) dirty.add("__qak_block__"); });')
       lines.push('        if (!scheduled) { scheduled = true; Promise.resolve().then(flush); }')
       lines.push('        return true;')
       lines.push('      }')
       lines.push('    });')
+      lines.push('    const initialBlocks = reconcileBlocks(true);')
+    lines.push('    commitBlocks(initialBlocks.nextBlocks, initialBlocks.nextSlots);')
+      lines.push('    Object.defineProperty(proxy, "__qak_initial_blocks__", { value: initialBlocks.operations });')
       lines.push('    return proxy;')
       lines.push('  };')
     }
@@ -156,7 +217,13 @@ function emitBundle(module: CanonicalModuleEntry, page: CanonicalLoweredPageMode
     lines.push(`    ${factoryName}: function (context) { return ${vm}; },`)
     if (kind === 'page' && page !== undefined) {
       lines.push('    bindingEvaluators: {')
-      for (const binding of page.bindings) lines.push(`      ${quote(String(binding.templateBindingId))}: function (scope) { return ${printEvaluator(binding.evaluator, context)}; },`)
+      for (const binding of page.bindings) {
+        const expression = `function (scope) { return ${printEvaluator(binding.evaluator, context)}; }`
+        const evaluator = binding.scope.kind === 'page'
+          ? expression
+          : `(function () { const evaluator = ${expression}; Object.defineProperty(evaluator, "__qak_initial__", { value: false }); return evaluator; })()`
+        lines.push(`      ${quote(String(binding.templateBindingId))}: ${evaluator},`)
+      }
       lines.push('    },')
       lines.push('    handlerMethods: {')
       for (const handler of page.handlers) lines.push(`      ${quote(String(handler.templateHandlerId))}: ${quote(handler.methodName)},`)
@@ -264,6 +331,12 @@ function printNode(node: SyntaxNode, context: PrinterContext): string {
       if (propertyIdentifier === undefined) throw unsupported(node, context)
       return `${object}.${propertyIdentifier}`
     }
+    case 'CanonicalMemberPath': {
+      const root = printRequired(field('root'), context, node)
+      const rawPath = node.fields.path
+      if (!Array.isArray(rawPath) || rawPath.some((entry) => typeof entry !== 'string')) throw unsupported(node, context)
+      return rawPath.reduce((output, property) => `${output}.${property}`, root)
+    }
     case 'CallExpression': {
       const callee = field('callee')
       const args = array('arguments')
@@ -355,7 +428,38 @@ function printPageVm(defaultExport: SyntaxNode, page: CanonicalLoweredPageModel,
   const bindings = page.bindings
     .filter((binding) => binding.scope.kind === 'page')
     .map((binding) => `${quote(String(binding.templateBindingId))}: { deps: ${JSON.stringify(binding.evaluator.kind === 'expression' ? binding.evaluator.expression.stateBindings : binding.evaluator.segments.flatMap((segment) => segment.kind === 'expression' ? segment.expression.stateBindings : []))}, evaluate: function () { return ${printEvaluator(binding.evaluator, context)}; } }`)
-  return `__qak_reactive_page_vm__({ ${[...fields, ...projectedMembers].join(', ')} }, context, { ${bindings.join(', ')} })`
+  const blocks = page.blocks.map((block) => {
+    const parent = page.nodes.find((node) => node.templateNodeId === block.parentTemplateNodeId)
+    const childIndex = parent?.children.findIndex((child) => child.kind === 'block' && child.templateBlockId === block.templateBlockId) ?? -1
+    if (parent === undefined || childIndex < 0) throw new EmitterIssue(ErrorCodes.emitterAbiInvalid, `Block parent position is absent: ${block.templateBlockId}`, context.module.source.sourcePath, block.source.span)
+    const staticIndex = parent.children.slice(0, childIndex).filter((child) => child.kind === 'node').length
+    const blockBindings = page.bindings
+      .filter((binding) => binding.scope.kind === 'block' && binding.scope.templateBlockId === block.templateBlockId)
+      .map((binding) => `${quote(String(binding.templateBindingId))}: function (scope) { return ${printEvaluator(binding.evaluator, context)}; }`)
+    const blockHandlers = page.handlers
+      .filter((handler) => handler.scope.kind === 'block' && handler.scope.templateBlockId === block.templateBlockId)
+      .map((handler) => `{ templateHandlerId: ${handler.templateHandlerId} }`)
+    const handlerText = `[${blockHandlers.join(', ')}]`
+    if (block.controller.kind === 'if') {
+      return `${quote(String(block.templateBlockId))}: { templateBlockId: ${block.templateBlockId}, kind: "if", parentTemplateNodeId: ${block.parentTemplateNodeId}, staticIndex: ${staticIndex}, deps: ${JSON.stringify(block.controller.predicate.stateBindings)}, bindings: { ${blockBindings.join(', ')} }, handlers: ${handlerText}, evaluate: function (scope) { return ${printExpression(block.controller.predicate, context)}; } }`
+    }
+    const deps = [...new Set([...block.controller.iterable.stateBindings, ...block.controller.keyExpression.stateBindings])].sort(compareUtf8)
+    return `${quote(String(block.templateBlockId))}: { templateBlockId: ${block.templateBlockId}, kind: "for", parentTemplateNodeId: ${block.parentTemplateNodeId}, staticIndex: ${staticIndex}, deps: ${JSON.stringify(deps)}, indexAlias: ${quote(block.controller.indexAlias)}, itemAlias: ${quote(block.controller.itemAlias)}, bindings: { ${blockBindings.join(', ')} }, handlers: ${handlerText}, evaluate: function (scope) { return ${printExpression(block.controller.iterable, context)}; }, key: function (scope) { return ${printExpression(block.controller.keyExpression, context)}; } }`
+  })
+  const target = `{ ${[...fields, ...projectedMembers].join(', ')} }`
+  const linkMethods = page.handlers.filter((handler) => handler.action?.kind === 'url').map((handler) => {
+    const action = handler.action
+    if (action === undefined || action.kind !== 'url') throw new EmitterIssue(ErrorCodes.emitterAbiInvalid, 'URL handler action is absent', context.module.source.sourcePath, handler.source.span)
+    const expression = action.mode === 'router'
+      ? `$app_require$("@app-module/system.router").default.push({ uri: ${quote(action.url)} })`
+      : action.mode === 'external'
+        ? `$app_require$("@app-module/system.openUrl").default.open({ url: ${quote(action.url)} })`
+        : `$app_require$("@app-module/system.webview").default.open({ url: ${quote(action.url)} })`
+    return `target[${quote(handler.methodName)}] = function () { return ${expression}; };`
+  })
+  return linkMethods.length === 0
+    ? `__qak_reactive_page_vm__(${target}, context, { ${bindings.join(', ')} }, { ${blocks.join(', ')} })`
+    : `__qak_reactive_page_vm__((function () { const target = ${target}; ${linkMethods.join(' ')} return target; })(), context, { ${bindings.join(', ')} }, { ${blocks.join(', ')} })`
 }
 
 function printStaticContext(reference: CanonicalModuleReference, context: PrinterContext): string {

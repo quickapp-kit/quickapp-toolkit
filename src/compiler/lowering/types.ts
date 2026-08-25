@@ -38,6 +38,10 @@ export interface CanonicalStyle {
   readonly marginRight?: CanonicalLength
   readonly marginBottom?: CanonicalLength
   readonly marginLeft?: CanonicalLength
+  readonly paddingTop?: CanonicalLength
+  readonly paddingRight?: CanonicalLength
+  readonly paddingBottom?: CanonicalLength
+  readonly paddingLeft?: CanonicalLength
   readonly flexDirection?: 'row' | 'column'
   readonly justifyContent?: 'flex-start' | 'center' | 'flex-end' | 'space-between'
   readonly alignItems?: 'flex-start' | 'center' | 'flex-end' | 'stretch'
@@ -52,6 +56,15 @@ export type CanonicalHost =
   | { readonly type: 'View'; readonly props: Readonly<Record<string, never>>; readonly style: CanonicalStyle }
   | { readonly type: 'Text'; readonly props: { readonly text: string }; readonly style: CanonicalStyle }
   | { readonly type: 'Button'; readonly props: { readonly text: string; readonly enabled: boolean }; readonly style: CanonicalStyle }
+  | { readonly type: 'Image'; readonly props: { readonly src: string }; readonly style: CanonicalStyle }
+  | { readonly type: 'Input'; readonly props: { readonly value: string; readonly enabled: boolean }; readonly style: CanonicalStyle }
+  | { readonly type: 'Switch'; readonly props: { readonly checked: boolean; readonly enabled: boolean }; readonly style: CanonicalStyle }
+  | { readonly type: 'Slider'; readonly props: { readonly min: number; readonly max: number; readonly step: number; readonly value: number; readonly enabled: boolean }; readonly style: CanonicalStyle }
+  | { readonly type: 'Picker'; readonly props: { readonly mode: 'text'; readonly range: string; readonly selected: number }; readonly style: CanonicalStyle }
+  | { readonly type: 'List'; readonly props: Readonly<Record<string, never>>; readonly style: CanonicalStyle }
+  | { readonly type: 'Scroll'; readonly props: Readonly<Record<string, never>>; readonly style: CanonicalStyle }
+  | { readonly type: 'Video'; readonly props: { readonly src: string; readonly poster: string; readonly autoplay: boolean; readonly controls: boolean; readonly muted: boolean }; readonly style: CanonicalStyle }
+  | { readonly type: 'Tabs'; readonly props: { readonly items: string; readonly selected: number }; readonly style: CanonicalStyle }
 
 export type CanonicalScope =
   | { readonly kind: 'page' }
@@ -93,9 +106,9 @@ export type CanonicalBindingEvaluator =
 export interface CanonicalBinding {
   readonly templateBindingId: number
   readonly scope: CanonicalScope
-  readonly target: { readonly templateNodeId: number; readonly name: 'text' | 'enabled' }
+  readonly target: { readonly templateNodeId: number; readonly name: 'text' | 'enabled' | 'value' | 'checked' | 'selected' }
   readonly evaluator: CanonicalBindingEvaluator
-  readonly resultType: 'string' | 'boolean'
+  readonly resultType: 'string' | 'boolean' | 'number'
   readonly source: CanonicalSourceLocation
 }
 
@@ -126,8 +139,9 @@ export interface CanonicalHandler {
   readonly templateHandlerId: number
   readonly scope: CanonicalScope
   readonly templateNodeId: number
-  readonly eventType: 'click'
+  readonly eventType: 'click' | 'input' | 'change' | 'focus' | 'scroll' | 'scrollend' | 'scrolltop' | 'scrollbottom' | 'prepared' | 'start' | 'pause' | 'finish' | 'error' | 'timeupdate'
   readonly methodName: string
+  readonly action?: { readonly kind: 'url'; readonly url: string; readonly mode: 'router' | 'external' | 'webview' }
   readonly source: CanonicalSourceLocation
 }
 

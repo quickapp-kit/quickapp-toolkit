@@ -9,6 +9,7 @@ import { WorkspaceResolver } from '../../src/workspace/workspace-resolver.js'
 for (const [name, directory] of [
   ['Case 001', '../quickapp-examples/quickapp-code-test1'],
   ['Case 002', '../quickapp-examples/quickapp-code-test2'],
+  ['BLOCK-001', '../quickapp-examples/quickapp-code-test3'],
 ] as const) {
   test(`${name} is accepted by the default Workspace contract`, async () => {
     const root = path.resolve(process.cwd(), directory)

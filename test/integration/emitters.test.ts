@@ -55,10 +55,10 @@ test('TK-S05/TK-S06 Case 001 emit one ABI-consistent JS set and valid Page IR', 
     assert.deepEqual(Object.keys(definition).sort(), ['bindingEvaluators', 'createPageVm', 'handlerMethods', 'kind', 'schemaVersion'])
     assert.equal(typeof definition.createPageVm, 'function')
     const pageVm = (definition.createPageVm as (context: unknown) => Record<string, unknown>)({})
-    assert.equal(pageVm.title, '欢迎体验快应用开发')
+    assert.equal(pageVm.title, '欢迎体验 quickapp 开发')
     assert.equal(Object.prototype.hasOwnProperty.call(pageVm, 'private'), false)
     const evaluators = definition.bindingEvaluators as Record<string, (this: Record<string, unknown>, scope: unknown) => unknown>
-    assert.equal(evaluators['1']?.call(pageVm, {}), '欢迎体验快应用开发')
+    assert.equal(evaluators['1']?.call(pageVm, {}), '欢迎体验 quickapp 开发')
     assert.match(demoBundle.content, /String\(this\.title\)/)
     assert.match(demoBundle.content, /\$app_require\$\("@app-module\/system\.router"\)/)
     assert.equal(bootstraps.length, 1)

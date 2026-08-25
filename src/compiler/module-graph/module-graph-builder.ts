@@ -283,7 +283,7 @@ class GraphSession {
   addCapability(reference: UnresolvedReference): void {
     const name = reference.specifier.slice(1)
     if (!this.manifest.features.includes(name)) throw this.issue(ErrorCodes.capabilityNotDeclared, `Capability is referenced but not declared: ${name}`, reference)
-    if (!['system.router', 'system.prompt', 'system.device', 'system.fetch'].includes(name)) throw this.issue(ErrorCodes.capabilityUnsupported, `Capability is not supported in V1: ${name}`, reference)
+    if (!['system.router', 'system.prompt', 'system.device', 'system.fetch', 'system.file', 'system.timer', 'system.openUrl', 'system.webview'].includes(name)) throw this.issue(ErrorCodes.capabilityUnsupported, `Capability is not supported in V1: ${name}`, reference)
     const evidence = this.capabilityEvidence.get(name) ?? []
     evidence.push(Object.freeze({ sourcePath: reference.ownerSourcePath, span: reference.span }))
     this.capabilityEvidence.set(name, evidence)
@@ -307,7 +307,7 @@ class GraphSession {
       const references = this.capabilityEvidence.get(name) ?? []
       return Object.freeze({
         name,
-        status: references.length === 0 ? 'declaredOnly' : name === 'system.fetch' ? 'deferred' : 'required',
+        status: references.length === 0 ? 'declaredOnly' : 'required',
         references: Object.freeze([...references].sort(compareEvidence)),
       }) as CapabilityRelation
     }).sort((left, right) => compareUtf8(left.name, right.name))

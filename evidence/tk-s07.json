@@ -3,8 +3,8 @@
   "case": "quickapp-code-test1",
   "sourceManifest": "quickapp-examples/quickapp-code-test1/src/manifest.json",
   "packagePath": "evidence/tk-s07-case001.rpk",
-  "packageByteLength": 25352,
-  "packageSha256": "6bab1eb0899e4871fca68fe83205de971efcbdcca8c2629eed6cb8e682f5797c",
+  "packageByteLength": 34785,
+  "packageSha256": "9812df4762e3821b26040f8b0b26ce7689d3dcd9ea9eef803510a9b05f6f79ca",
   "memberCount": 19,
   "members": [
     {
@@ -16,14 +16,14 @@
     {
       "path": "META-INF/quickapp-kit/source-maps/pages/pages/Demo/index.js.map",
       "mediaType": "application/json",
-      "byteLength": 336,
-      "sha256": "0ee291a9f56e07fe74398fac224eb4a7e0bf773e34b6ccf1fbf55bf8e7a1444c"
+      "byteLength": 646,
+      "sha256": "0d11f985b932461a6ea5dc6ac16029ec5c6cfe0a1660e436d6a25f990c930a47"
     },
     {
       "path": "META-INF/quickapp-kit/source-maps/pages/pages/DemoDetail/index.js.map",
       "mediaType": "application/json",
-      "byteLength": 343,
-      "sha256": "dd18c627608e1c15fe908652048082823256f3966da7481ace32e88d854ca47d"
+      "byteLength": 653,
+      "sha256": "98206625598d64fdf452532539b9ad4e6857a8581802954c8512d5aa47487577"
     },
     {
       "path": "META-INF/quickapp-kit/source-maps/shared/31d4851dc88ea63a12ff949dc57de9cc523f902fe993fc3545050130cd1a9296.js.map",
@@ -64,38 +64,38 @@
     {
       "path": "manifest.json",
       "mediaType": "application/json",
-      "byteLength": 853,
-      "sha256": "e11901a6abd3e3f9f4b1a560eaa22587043a4a62984c695abada2ac5cce906bc"
+      "byteLength": 878,
+      "sha256": "ff5fe16920a04430bd498dfb7c6f4c771289c88a9fe32316de3240ea557a784f"
     },
     {
       "path": "pages/pages/Demo/index.js",
       "mediaType": "application/javascript",
-      "byteLength": 2589,
-      "sha256": "bacd890170a393f8ff0579b8bd8f558a7fc04de2b35833aa5f15909bbb5b0a33"
+      "byteLength": 7473,
+      "sha256": "6b8ee7de5c4d514b3e64ffb037c6b26f887916a72b7242d182b7d41d1f46f72c"
     },
     {
       "path": "pages/pages/DemoDetail/index.js",
       "mediaType": "application/javascript",
-      "byteLength": 2203,
-      "sha256": "1e751ba6251c7c02b856128b5a679d825b8cc3b48fb527e92f6fc8f222e6ed8c"
+      "byteLength": 7149,
+      "sha256": "02f66a8e257f3e392511e99248d8053c596cb5668b82af46bb9fc4911059054a"
     },
     {
       "path": "quickapp-kit/pages/pages/Demo/index.ir.json",
       "mediaType": "application/json",
-      "byteLength": 1140,
-      "sha256": "5549aea159c0d01623702dcefea90cf9257475f78dda63426bec8f31b2909196"
+      "byteLength": 994,
+      "sha256": "e5e53fcedd7edb1dd14d865ad3b87f34d68dcf59285420f05a6a09fabfcb60fd"
     },
     {
       "path": "quickapp-kit/pages/pages/DemoDetail/index.ir.json",
       "mediaType": "application/json",
-      "byteLength": 2896,
-      "sha256": "ee5b6ab9d1f6c1c42a62ab99b85c0e176e4e6c545c0fa88d9f92b8525e6e3030"
+      "byteLength": 2001,
+      "sha256": "0162055fb9d79d81768b0daf18a6eab02508f8524aa6dcb4ce8b527802c03cba"
     },
     {
       "path": "quickapp-kit/runtime.json",
       "mediaType": "application/json",
-      "byteLength": 3164,
-      "sha256": "64d6da6c1f08338b56fcd3c1d90e5efdd0f1a465caf06e65860e704a433ed21a"
+      "byteLength": 3163,
+      "sha256": "2ce08f80dc7a0e1357e1d6208fbc8b8c16d96665ad3601895c5753f8de910540"
     },
     {
       "path": "shared/31d4851dc88ea63a12ff949dc57de9cc523f902fe993fc3545050130cd1a9296.js",

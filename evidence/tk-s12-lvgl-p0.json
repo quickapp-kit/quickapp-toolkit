@@ -1,0 +1,21 @@
+{
+  "status": "PASS",
+  "case": "quickapp-code-test5",
+  "sourceManifest": "quickapp-examples/quickapp-code-test5/src/manifest.json",
+  "packagePath": "evidence/tk-s12-lvgl-p0.rpk",
+  "packageByteLength": 25011,
+  "packageSha256": "25977ea6d92ed571ed6d019c3b0dc0b3ee5f1576acdf1ac3ee98fa68244ed74b",
+  "entryRoute": "/pages/Home",
+  "routes": [
+    "/pages/Home",
+    "/pages/Detail"
+  ],
+  "requiredRuntimeOperations": [
+    "updateBinding",
+    "removeBlock",
+    "moveBlock",
+    "navigationPush",
+    "navigationClose"
+  ],
+  "deterministicBuild": true
+}

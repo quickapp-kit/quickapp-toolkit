@@ -60,7 +60,7 @@ interface MutableNode {
   readonly ancestors: readonly (readonly string[])[]
   readonly children: CanonicalChild[]
   readonly hostType: CanonicalHost['type']
-  readonly props: Record<string, string | boolean>
+  readonly props: Record<string, string | boolean | number>
   style: CanonicalStyle
 }
 
@@ -302,10 +302,12 @@ class LoweringSession {
     return node
   }
 
-  hostFor(element: TemplateElementSyntax, page: ParsedUxSource, scratch: PageScratch, scope: CanonicalScope, aliases: ReadonlySet<string>): { readonly type: CanonicalHost['type']; readonly props: Record<string, string | boolean> } {
+  hostFor(element: TemplateElementSyntax, page: ParsedUxSource, scratch: PageScratch, scope: CanonicalScope, aliases: ReadonlySet<string>): { readonly type: CanonicalHost['type']; readonly props: Record<string, string | boolean | number> } {
     const tag = element.tagName
     const typeAttribute = templateAttribute(element, 'type')
     const valueAttribute = templateAttribute(element, 'value')
+    const checkedAttribute = templateAttribute(element, 'checked')
+    const selectedAttribute = templateAttribute(element, 'selected')
     const tidAttribute = templateAttribute(element, 'tid')
     if (tidAttribute !== undefined && templateAttribute(element, 'for') === undefined) {
       throw new LoweringIssue(ErrorCodes.loweringBlockInvalid, 'tid is only valid on a keyed for element', page.sourcePath, tidAttribute.span)
@@ -326,8 +328,94 @@ class LoweringSession {
       }
       return { type: 'Text', props: { text } }
     }
+    if (tag === 'image') {
+      if (typeAttribute !== undefined || valueAttribute !== undefined || element.children.some((child) => child.kind === 'element' || (child.kind === 'text' && child.value.trim() !== ''))) {
+        throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Image accepts only a static src prop in V1', page.sourcePath, element.span)
+      }
+      const srcAttribute = templateAttribute(element, 'src')
+      if (srcAttribute === undefined || !/^assets\/[A-Za-z0-9._/-]+$/.test(srcAttribute.rawValue)) {
+        throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Image src must reference an RPK assets path', page.sourcePath, srcAttribute?.span ?? element.span)
+      }
+      return { type: 'Image', props: { src: srcAttribute.rawValue } }
+    }
+    if (tag === 'a') {
+      const href = templateAttribute(element, 'href')?.rawValue
+      const mode = templateAttribute(element, 'open-mode')?.rawValue
+      const text = element.children.filter((child): child is TemplateTextSyntax => child.kind === 'text').map((child) => child.value).join('')
+      if (element.children.some((child) => child.kind === 'element') || href === undefined || href.length === 0 || text.trim().length === 0) {
+        throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Anchor requires one static text label and href', page.sourcePath, element.span)
+      }
+      if (href.startsWith('/')) {
+        if (mode !== undefined && mode !== 'internal') throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Internal anchor open-mode must be internal or omitted', page.sourcePath, element.span)
+      } else if (mode !== 'external' && mode !== 'webview') {
+        throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'External anchor requires open-mode=external or webview', page.sourcePath, element.span)
+      }
+      return { type: 'Button', props: { text, enabled: true } }
+    }
+    if (tag === 'switch') {
+      if (typeAttribute !== undefined || valueAttribute !== undefined || element.children.length !== 0) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Switch accepts checked only', page.sourcePath, element.span)
+      const checked = checkedAttribute?.rawValue ?? 'false'
+      if (checked !== 'true' && checked !== 'false') throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Switch checked must be true or false in B1', page.sourcePath, checkedAttribute?.span ?? element.span)
+      return { type: 'Switch', props: { checked: checked === 'true', enabled: true } }
+    }
+    if (tag === 'slider') {
+      if (element.children.length !== 0) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Slider does not accept children', page.sourcePath, element.span)
+      const numberAttribute = (name: string, fallback: number): number => {
+        const raw = templateAttribute(element, name)?.rawValue
+        const value = raw === undefined || raw === '' ? fallback : Number(raw)
+        if (!Number.isFinite(value)) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, `Slider ${name} must be finite`, page.sourcePath, templateAttribute(element, name)?.span ?? element.span)
+        return value
+      }
+      const min = numberAttribute('min', 0)
+      const max = numberAttribute('max', 100)
+      const step = numberAttribute('step', 1)
+      const value = numberAttribute('value', min)
+      if (max < min || step <= 0 || value < min || value > max) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Slider range or value is invalid', page.sourcePath, element.span)
+      return { type: 'Slider', props: { min, max, step, value, enabled: true } }
+    }
+    if (tag === 'picker') {
+      if (typeAttribute?.rawValue !== undefined && typeAttribute.rawValue !== 'text') throw new LoweringIssue(ErrorCodes.loweringComponentUnsupported, 'Only Picker mode=text is supported in B2', page.sourcePath, typeAttribute.span)
+      const range = templateAttribute(element, 'range')?.rawValue
+      const selectedRaw = templateAttribute(element, 'selected')?.rawValue ?? '0'
+      const selected = Number(selectedRaw)
+      if (range === undefined || range.length === 0 || !Number.isInteger(selected) || selected < 0) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Picker requires a non-empty range and integer selected index', page.sourcePath, element.span)
+      return { type: 'Picker', props: { mode: 'text', range, selected } }
+    }
+    if (tag === 'tabs') {
+      if (element.children.length !== 0 || typeAttribute !== undefined || valueAttribute !== undefined || checkedAttribute !== undefined) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Tabs accepts static items and selected props only', page.sourcePath, element.span)
+      const items = templateAttribute(element, 'items')?.rawValue
+      const selectedRaw = selectedAttribute?.expression === undefined ? (selectedAttribute?.rawValue ?? '0') : '0'
+      const selected = Number(selectedRaw)
+      if (items === undefined || items.length === 0 || items.split('|').some((item) => item.trim().length === 0) || !Number.isInteger(selected) || selected < 0) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Tabs requires non-empty pipe-delimited items and a non-negative selected index', page.sourcePath, element.span)
+      return { type: 'Tabs', props: { items, selected } }
+    }
+    if (tag === 'list' || tag === 'scroll') {
+      if (typeAttribute !== undefined || valueAttribute !== undefined || checkedAttribute !== undefined) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, `${tag} accepts no host props`, page.sourcePath, element.span)
+      return { type: tag === 'list' ? 'List' : 'Scroll', props: {} }
+    }
+    if (tag === 'video') {
+      if (element.children.length !== 0) throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Video does not accept children', page.sourcePath, element.span)
+      const src = templateAttribute(element, 'src')?.rawValue
+      const poster = templateAttribute(element, 'poster')?.rawValue ?? ''
+      const booleanAttribute = (name: string): boolean => {
+        const raw = templateAttribute(element, name)?.rawValue
+        if (raw === undefined || raw === '') return false
+        if (raw !== 'true' && raw !== 'false') throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, `Video ${name} must be true or false`, page.sourcePath, templateAttribute(element, name)?.span ?? element.span)
+        return raw === 'true'
+      }
+      if (src === undefined || src.length === 0 || (poster.length > 0 && !/^assets\/[A-Za-z0-9._/-]+$/.test(poster))) {
+        throw new LoweringIssue(ErrorCodes.loweringHostPropInvalid, 'Video requires a non-empty src and an assets poster path', page.sourcePath, element.span)
+      }
+      return { type: 'Video', props: { src, poster, autoplay: booleanAttribute('autoplay'), controls: booleanAttribute('controls'), muted: booleanAttribute('muted') } }
+    }
     if (tag === 'input') {
-      if (typeAttribute?.rawValue !== 'button') throw new LoweringIssue(ErrorCodes.loweringComponentUnsupported, 'Only input type=button lowers to Button', page.sourcePath, typeAttribute?.span ?? element.span)
+      if (typeAttribute?.rawValue === 'text') {
+        if (element.children.length !== 0 || valueAttribute?.rawValue.includes('{{')) {
+          throw new LoweringIssue(ErrorCodes.loweringBindingInvalid, 'Input text value must be a static V1 value', page.sourcePath, valueAttribute?.span ?? element.span)
+        }
+        return { type: 'Input', props: { value: valueAttribute?.rawValue ?? '', enabled: true } }
+      }
+      if (typeAttribute?.rawValue !== 'button') throw new LoweringIssue(ErrorCodes.loweringComponentUnsupported, 'Only input type=button or type=text lowers in V1', page.sourcePath, typeAttribute?.span ?? element.span)
       if (valueAttribute?.rawValue.includes('{{')) throw new LoweringIssue(ErrorCodes.loweringBindingInvalid, 'Dynamic input value is outside the verified V1 frontend contract', page.sourcePath, valueAttribute.span)
       return { type: 'Button', props: { text: valueAttribute?.rawValue ?? '', enabled: true } }
     }
@@ -359,27 +447,51 @@ class LoweringSession {
   }
 
   addBindingAndHandler(element: TemplateElementSyntax, node: MutableNode, page: ParsedUxSource, scratch: PageScratch, scope: CanonicalScope): void {
-    const onclick = templateAttribute(element, 'onclick')
-    if (onclick === undefined) return
-    if (node.hostType !== 'Button') throw new LoweringIssue(ErrorCodes.loweringHandlerInvalid, 'Only Button has a V1 click Handler', page.sourcePath, onclick.span)
-    const methodName = onclick.rawValue
-    let methods: ReadonlyMap<string, SyntaxNode>
-    try {
-      methods = buildMethodIndex(page.script)
-    } catch (error) {
-      throw new LoweringIssue(ErrorCodes.loweringHandlerInvalid, 'Page export default methods are not statically valid', page.sourcePath, onclick.span)
+    const eventNames = node.hostType === 'Button' ? ['onclick'] : node.hostType === 'Input' ? ['oninput', 'onchange', 'onfocus'] : node.hostType === 'Switch' || node.hostType === 'Slider' || node.hostType === 'Picker' || node.hostType === 'Tabs' ? ['onchange'] : node.hostType === 'List' || node.hostType === 'Scroll' ? ['onscroll', 'onscrollend', 'onscrolltop', 'onscrollbottom'] : node.hostType === 'Video' ? ['onprepared', 'onstart', 'onpause', 'onfinish', 'onerror', 'ontimeupdate'] : []
+    const eventTypes = new Map([['onclick', 'click' as const], ['oninput', 'input' as const], ['onchange', 'change' as const], ['onfocus', 'focus' as const], ['onscroll', 'scroll' as const], ['onscrollend', 'scrollend' as const], ['onscrolltop', 'scrolltop' as const], ['onscrollbottom', 'scrollbottom' as const], ['onprepared', 'prepared' as const], ['onstart', 'start' as const], ['onpause', 'pause' as const], ['onfinish', 'finish' as const], ['onerror', 'error' as const], ['ontimeupdate', 'timeupdate' as const]])
+    let methods: ReadonlyMap<string, SyntaxNode> | undefined
+    if (element.tagName === 'a') {
+      const href = templateAttribute(element, 'href')?.rawValue as string
+      const mode = templateAttribute(element, 'open-mode')?.rawValue
+      const handlerId = scratch.nextHandlerId++
+      this.#budget.charge('handlers', 1, page.sourcePath, element.span)
+      this.#budget.charge('provenance', 1, page.sourcePath, element.span)
+      scratch.handlers.push({
+        templateHandlerId: handlerId,
+        scope,
+        templateNodeId: node.templateNodeId,
+        eventType: 'click',
+        methodName: `__qak_link_${handlerId}`,
+        action: { kind: 'url', url: href, mode: href.startsWith('/') ? 'router' : mode === 'webview' ? 'webview' : 'external' },
+        source: location(page.sourcePath, element.span),
+      })
     }
-    if (!methods.has(methodName)) throw new LoweringIssue(ErrorCodes.loweringHandlerInvalid, 'Handler method is not present: ' + methodName, page.sourcePath, onclick.span)
-    this.#budget.charge('handlers', 1, page.sourcePath, onclick.span)
-    this.#budget.charge('provenance', 1, page.sourcePath, onclick.span)
-    scratch.handlers.push({
-      templateHandlerId: scratch.nextHandlerId++,
-      scope,
-      templateNodeId: node.templateNodeId,
-      eventType: 'click',
-      methodName,
-      source: location(page.sourcePath, onclick.span),
-    })
+    if (node.hostType === 'Tabs' && element.attributes.find((attribute) => attribute.name === 'selected')?.expression !== undefined) {
+      const attribute = element.attributes.find((candidate) => candidate.name === 'selected') as TemplateAttributeSyntax
+      const selected = expression(page.sourcePath, attribute.expression as SyntaxNode, 'identity', new Set<string>(), scratch.stateSymbols)
+      this.#budget.charge('expressionNodes', countSyntaxNodes(selected.ast), page.sourcePath, selected.source.span)
+      this.#budget.charge('bindings', 1, page.sourcePath, attribute.span)
+      this.#budget.charge('provenance', 1, page.sourcePath, attribute.span)
+      scratch.bindings.push({ templateBindingId: scratch.nextBindingId++, scope, target: { templateNodeId: node.templateNodeId, name: 'selected' }, evaluator: { kind: 'expression', expression: selected }, resultType: 'number', source: location(page.sourcePath, attribute.span) })
+    }
+    for (const eventName of eventNames) {
+      const attribute = templateAttribute(element, eventName)
+      if (attribute === undefined) continue
+      if (methods === undefined) {
+        try { methods = buildMethodIndex(page.script) } catch (error) {
+          throw new LoweringIssue(ErrorCodes.loweringHandlerInvalid, 'Page export default methods are not statically valid', page.sourcePath, attribute.span)
+        }
+      }
+      const methodName = attribute.rawValue
+      if (!methods.has(methodName)) throw new LoweringIssue(ErrorCodes.loweringHandlerInvalid, 'Handler method is not present: ' + methodName, page.sourcePath, attribute.span)
+      this.#budget.charge('handlers', 1, page.sourcePath, attribute.span)
+      this.#budget.charge('provenance', 1, page.sourcePath, attribute.span)
+      scratch.handlers.push({
+        templateHandlerId: scratch.nextHandlerId++, scope, templateNodeId: node.templateNodeId,
+        eventType: eventTypes.get(eventName) as 'click' | 'input' | 'change' | 'focus' | 'scroll' | 'scrollend' | 'scrolltop' | 'scrollbottom' | 'prepared' | 'start' | 'pause' | 'finish' | 'error' | 'timeupdate', methodName,
+        source: location(page.sourcePath, attribute.span),
+      })
+    }
   }
 
   ifController(attribute: TemplateAttributeSyntax, page: ParsedUxSource, aliases: ReadonlySet<string>, stateSymbols: ReadonlySet<string>): CanonicalIfController {
@@ -416,7 +528,7 @@ class LoweringSession {
   }
 
   freezeNode(node: MutableNode): CanonicalNode {
-    const props = node.hostType === 'View' ? {} : node.hostType === 'Text' ? { text: String(node.props.text ?? '') } : { text: String(node.props.text ?? ''), enabled: node.props.enabled !== false }
+    const props = node.hostType === 'View' ? {} : node.hostType === 'Text' ? { text: String(node.props.text ?? '') } : node.hostType === 'Button' ? { text: String(node.props.text ?? ''), enabled: node.props.enabled !== false } : node.hostType === 'Image' ? { src: String(node.props.src ?? '') } : node.hostType === 'Input' ? { value: String(node.props.value ?? ''), enabled: node.props.enabled !== false } : node.hostType === 'Switch' ? { checked: node.props.checked === true, enabled: node.props.enabled !== false } : node.hostType === 'Slider' ? { min: Number(node.props.min), max: Number(node.props.max), step: Number(node.props.step), value: Number(node.props.value), enabled: node.props.enabled !== false } : node.hostType === 'Picker' ? { mode: 'text' as const, range: String(node.props.range ?? ''), selected: Number(node.props.selected) } : node.hostType === 'Video' ? { src: String(node.props.src ?? ''), poster: String(node.props.poster ?? ''), autoplay: node.props.autoplay === true, controls: node.props.controls === true, muted: node.props.muted === true } : node.hostType === 'Tabs' ? { items: String(node.props.items ?? ''), selected: Number(node.props.selected) } : {}
     return {
       templateNodeId: node.templateNodeId,
       host: { type: node.hostType, props, style: node.style } as CanonicalHost,
@@ -561,7 +673,10 @@ function validatePage(page: CanonicalLoweredPageModel): void {
     const target = nodes.get(binding.target.templateNodeId)
     if (target === undefined || !sameScope(scopes.get(binding.target.templateNodeId), binding.scope)) throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Binding target or scope is invalid')
     if (binding.target.name === 'text' && target.host.type !== 'Text') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Text Binding target is not a Text Host')
-    if (binding.target.name === 'enabled' && target.host.type !== 'Button') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Enabled Binding target is not a Button Host')
+    if (binding.target.name === 'enabled' && target.host.type !== 'Button' && target.host.type !== 'Input' && target.host.type !== 'Switch') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Enabled Binding target is not a Button, Input or Switch Host')
+    if (binding.target.name === 'value' && target.host.type !== 'Input') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Value Binding target is not an Input Host')
+    if (binding.target.name === 'checked' && target.host.type !== 'Switch') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Checked Binding target is not a Switch Host')
+    if (binding.target.name === 'selected' && target.host.type !== 'Picker' && target.host.type !== 'Tabs') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Selected Binding target is not a Picker or Tabs Host')
     const key = `${binding.scope.kind}:${binding.scope.kind === 'block' ? binding.scope.templateBlockId : 0}:${binding.target.templateNodeId}:${binding.target.name}`
     if (bindingTargets.has(key)) throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Duplicate Binding target: ' + key)
     bindingTargets.add(key)
@@ -570,7 +685,14 @@ function validatePage(page: CanonicalLoweredPageModel): void {
   for (const handler of page.handlers) {
     const target = nodes.get(handler.templateNodeId)
     if (target === undefined || !sameScope(scopes.get(handler.templateNodeId), handler.scope)) throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Handler target or scope is invalid')
-    if (target.host.type !== 'Button' || handler.eventType !== 'click') throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Handler target or event type is invalid')
+    const validHandler = (target.host.type === 'Button' && handler.eventType === 'click')
+      || (target.host.type === 'Input' && (handler.eventType === 'input' || handler.eventType === 'change' || handler.eventType === 'focus'))
+      || (target.host.type === 'Switch' && handler.eventType === 'change')
+      || (target.host.type === 'Slider' && handler.eventType === 'change')
+      || ((target.host.type === 'Picker' || target.host.type === 'Tabs') && handler.eventType === 'change')
+      || ((target.host.type === 'List' || target.host.type === 'Scroll') && (handler.eventType === 'scroll' || handler.eventType === 'scrollend' || handler.eventType === 'scrolltop' || handler.eventType === 'scrollbottom'))
+      || (target.host.type === 'Video' && (handler.eventType === 'prepared' || handler.eventType === 'start' || handler.eventType === 'pause' || handler.eventType === 'finish' || handler.eventType === 'error' || handler.eventType === 'timeupdate'))
+    if (!validHandler) throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, `Handler target or event type is invalid: ${target.host.type}/${handler.eventType}`)
     const key = `${handler.scope.kind}:${handler.scope.kind === 'block' ? handler.scope.templateBlockId : 0}:${handler.templateNodeId}:${handler.eventType}`
     if (handlerTargets.has(key)) throw new LoweringIssue(ErrorCodes.loweringInternalInvariant, 'Duplicate Handler target: ' + key)
     handlerTargets.add(key)

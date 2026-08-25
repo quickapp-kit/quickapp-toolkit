@@ -15,6 +15,7 @@ import { DEFAULT_EMITTER_LIMITS, type EmitterLimits, type PageIrArtifact, type P
 
 const STYLE_KEYS = [
   'width', 'height', 'marginTop', 'marginRight', 'marginBottom', 'marginLeft',
+  'paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft',
   'flexDirection', 'justifyContent', 'alignItems', 'backgroundColor', 'color',
   'borderRadius', 'fontSize', 'textAlign',
 ] as const
@@ -153,7 +154,7 @@ function validatePage(page: CanonicalLoweredPageModel): void {
   for (const binding of page.bindings) {
     const node = nodes.get(binding.target.templateNodeId)
     if (node === undefined || !sameScope(scopes.get(node.templateNodeId), binding.scope)) throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, 'Binding target or scope is invalid', binding.source.sourcePath, binding.source.span)
-    if (binding.target.name === 'text' && node.host.type !== 'Text' || binding.target.name === 'enabled' && node.host.type !== 'Button') throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, 'Binding target does not match its Host', binding.source.sourcePath, binding.source.span)
+    if (binding.target.name === 'text' && node.host.type !== 'Text' || binding.target.name === 'enabled' && node.host.type !== 'Button' && node.host.type !== 'Input' && node.host.type !== 'Switch' && node.host.type !== 'Slider' || binding.target.name === 'value' && node.host.type !== 'Input' && node.host.type !== 'Slider' || binding.target.name === 'checked' && node.host.type !== 'Switch' || binding.target.name === 'selected' && node.host.type !== 'Picker' && node.host.type !== 'Tabs') throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, 'Binding target does not match its Host', binding.source.sourcePath, binding.source.span)
     const key = `${binding.scope.kind}:${scopeId(binding.scope)}:${binding.target.templateNodeId}:${binding.target.name}`
     if (bindingTargets.has(key)) throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, `Duplicate Binding target: ${key}`, binding.source.sourcePath, binding.source.span)
     bindingTargets.add(key)
@@ -161,7 +162,8 @@ function validatePage(page: CanonicalLoweredPageModel): void {
   const handlerTargets = new Set<string>()
   for (const handler of page.handlers) {
     const node = nodes.get(handler.templateNodeId)
-    if (node === undefined || node.host.type !== 'Button' || handler.eventType !== 'click' || !sameScope(scopes.get(node.templateNodeId), handler.scope)) throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, 'Handler target or scope is invalid', handler.source.sourcePath, handler.source.span)
+    const validHandler = node !== undefined && ((node.host.type === 'Button' && handler.eventType === 'click') || (node.host.type === 'Input' && (handler.eventType === 'input' || handler.eventType === 'change' || handler.eventType === 'focus')) || ((node.host.type === 'Switch' || node.host.type === 'Slider' || node.host.type === 'Picker' || node.host.type === 'Tabs') && handler.eventType === 'change') || ((node.host.type === 'List' || node.host.type === 'Scroll') && (handler.eventType === 'scroll' || handler.eventType === 'scrollend' || handler.eventType === 'scrolltop' || handler.eventType === 'scrollbottom')) || (node.host.type === 'Video' && (handler.eventType === 'prepared' || handler.eventType === 'start' || handler.eventType === 'pause' || handler.eventType === 'finish' || handler.eventType === 'error' || handler.eventType === 'timeupdate')))
+    if (!validHandler || !sameScope(scopes.get(handler.templateNodeId), handler.scope)) throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, 'Handler target or scope is invalid', handler.source.sourcePath, handler.source.span)
     const key = `${handler.scope.kind}:${scopeId(handler.scope)}:${handler.templateNodeId}:${handler.eventType}`
     if (handlerTargets.has(key)) throw new EmitterIssue(ErrorCodes.emitterIrTargetInvalid, `Duplicate Handler target: ${key}`, handler.source.sourcePath, handler.source.span)
     handlerTargets.add(key)
@@ -176,6 +178,15 @@ function projectHost(host: CanonicalHost): Readonly<Record<string, unknown>> {
   }
   if (host.type === 'View') return { type: 'View', props: {}, style }
   if (host.type === 'Text') return { type: 'Text', props: { text: host.props.text }, style }
+  if (host.type === 'Image') return { type: 'Image', props: { src: host.props.src }, style }
+  if (host.type === 'Input') return { type: 'Input', props: { value: host.props.value, enabled: host.props.enabled }, style }
+  if (host.type === 'Switch') return { type: 'Switch', props: { checked: host.props.checked, enabled: host.props.enabled }, style }
+  if (host.type === 'Slider') return { type: 'Slider', props: { min: host.props.min, max: host.props.max, step: host.props.step, value: host.props.value, enabled: host.props.enabled }, style }
+  if (host.type === 'Picker') return { type: 'Picker', props: { mode: host.props.mode, range: host.props.range, selected: host.props.selected }, style }
+  if (host.type === 'List') return { type: 'List', props: {}, style }
+  if (host.type === 'Scroll') return { type: 'Scroll', props: {}, style }
+  if (host.type === 'Video') return { type: 'Video', props: { src: host.props.src, poster: host.props.poster, autoplay: host.props.autoplay, controls: host.props.controls, muted: host.props.muted }, style }
+  if (host.type === 'Tabs') return { type: 'Tabs', props: { items: host.props.items, selected: host.props.selected }, style }
   return { type: 'Button', props: { text: host.props.text, enabled: host.props.enabled }, style }
 }
 

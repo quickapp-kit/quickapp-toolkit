@@ -116,9 +116,11 @@ function normalizeElement(node: HtmlNode, fullText: string, coordinates: SourceC
   const nodeLocation = location(node)
   const span = coordinates.span(nodeLocation.startOffset, nodeLocation.endOffset)
   if (depth > limits.maxDepth) throw new FrontendIssue(ErrorCodes.frontendLimitExceeded, 'Template depth exceeds configured limit', span, 'Reduce template nesting.')
-  const tagName = node.tagName ?? ''
-  if (!['div', 'text', 'input'].includes(tagName)) throw new FrontendIssue(ErrorCodes.templateFeatureUnsupported, `Template tag <${tagName}> is not supported in V1`, span, 'Use a V1-supported template tag.')
-  features.push(usage('template.tag.div/text/input', span))
+  const rawTagName = node.tagName ?? ''
+  // parse5 follows HTML parsing rules and normalizes QuickApp <image> to <img>.
+  const tagName = rawTagName === 'img' ? 'image' : rawTagName
+  if (!['div', 'text', 'image', 'input', 'switch', 'slider', 'picker', 'list', 'scroll', 'video', 'tabs', 'a'].includes(tagName)) throw new FrontendIssue(ErrorCodes.templateFeatureUnsupported, `Template tag <${rawTagName}> is not supported in V1`, span, 'Use a V1-supported template tag.')
+  features.push(usage('template.tag.div/text/image/input/switch/slider/picker/list/scroll/video/tabs/a', span))
   const attributes = (node.attrs ?? []).map((attribute) => normalizeAttribute(node, attribute, fullText, coordinates, limits, features))
   const children: TemplateChildSyntax[] = []
   for (const child of node.childNodes ?? []) {
@@ -156,17 +158,21 @@ function normalizeAttribute(
   const attributeLocation = location(owner).attrs?.[attribute.name] ?? location(owner).startTag ?? location(owner)
   const span = coordinates.span(attributeLocation.startOffset, attributeLocation.endOffset)
   const name = attribute.name.toLowerCase()
-  if (!['class', 'type', 'value', 'onclick', 'if', 'for', 'tid'].includes(name)) {
+  if (!['class', 'type', 'value', 'checked', 'enabled', 'min', 'max', 'step', 'mode', 'range', 'items', 'selected', 'src', 'poster', 'autoplay', 'controls', 'muted', 'href', 'open-mode', 'onclick', 'oninput', 'onchange', 'onfocus', 'onscroll', 'onscrollend', 'onscrolltop', 'onscrollbottom', 'onprepared', 'onstart', 'onpause', 'onfinish', 'onerror', 'ontimeupdate', 'if', 'for', 'tid'].includes(name)) {
     throw new FrontendIssue(ErrorCodes.templateFeatureUnsupported, `Template attribute ${name} is not supported in V1`, span, 'Use only V1-supported attributes and directives.')
   }
   if (name === 'class' && attribute.value.includes('{{')) throw new FrontendIssue(ErrorCodes.templateFeatureUnsupported, 'Dynamic class is not supported in V1', span, 'Use a static class value.')
-  if (name === 'onclick' && !/^[$A-Z_a-z][$\w]*$/.test(attribute.value)) throw new FrontendIssue(ErrorCodes.templateFeatureUnsupported, 'onclick must name one static VM method', span, 'Use an identifier such as onClick.')
-  if (['class', 'type', 'value'].includes(name)) features.push(usage('template.attr.class/type/value', span))
-  if (name === 'onclick') features.push(usage('template.event.onclick', span))
+  if (['onclick', 'oninput', 'onchange', 'onfocus', 'onscroll', 'onscrollend', 'onscrolltop', 'onscrollbottom', 'onprepared', 'onstart', 'onpause', 'onfinish', 'onerror', 'ontimeupdate'].includes(name) && !/^[$A-Z_a-z][$\w]*$/.test(attribute.value)) throw new FrontendIssue(ErrorCodes.templateFeatureUnsupported, `${name} must name one static VM method`, span, 'Use an identifier such as onTimeUpdate.')
+  if (['class', 'type', 'value', 'src', 'poster', 'autoplay', 'controls', 'muted', 'href', 'open-mode', 'items', 'selected'].includes(name)) features.push(usage('template.attr.class/type/value/src/video/a/tabs', span))
+  if (['onclick', 'oninput', 'onchange', 'onfocus', 'onscroll', 'onscrollend', 'onscrolltop', 'onscrollbottom', 'onprepared', 'onstart', 'onpause', 'onfinish', 'onerror', 'ontimeupdate'].includes(name)) features.push(usage(`template.event.${name}`, span))
   if (name === 'if') {
     const expression = directiveExpression(attribute.value, attributeLocation, fullText, coordinates, limits, ErrorCodes.templateSyntaxError)
     features.push(usage('template.directive.if', span))
     return Object.freeze({ name, rawValue: attribute.value, span, directive: 'if', expression })
+  }
+  if (name === 'selected' && attribute.value.includes('{{')) {
+    const expression = directiveExpression(attribute.value, attributeLocation, fullText, coordinates, limits, ErrorCodes.templateSyntaxError)
+    return Object.freeze({ name, rawValue: attribute.value, span, expression })
   }
   if (name === 'for') {
     const match = /^\{\{\s*\(([$A-Z_a-z][$\w]*),\s*([$A-Z_a-z][$\w]*)\)\s+in\s+([\s\S]+?)\s*\}\}$/.exec(attribute.value)

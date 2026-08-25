@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "case": "quickapp-code-test2",
+  "sourceManifest": "quickapp-examples/quickapp-code-test2/src/manifest.json",
+  "packagePath": "evidence/tk-s09-case002.rpk",
+  "packageByteLength": 12702,
+  "packageSha256": "f98e7621f57238d43b811a5c71ee38625488ce16d922d1db14ef70152f917eae",
+  "entryRoute": "/pages/Contract",
+  "requiredRuntimeOperations": [
+    "updateBinding",
+    "removeBlock",
+    "moveBlock"
+  ],
+  "deterministicBuild": true
+}

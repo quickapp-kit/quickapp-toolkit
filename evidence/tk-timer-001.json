@@ -1,0 +1,11 @@
+{
+  "status": "PASS",
+  "case": "timer-001",
+  "sourceManifest": "quickapp-examples/timer-001/src/manifest.json",
+  "packagePath": "evidence/tk-timer-001.rpk",
+  "packageByteLength": 25828,
+  "packageSha256": "22c49908786dc245a6d77ced4bf7cd34f176f71290db6da57b4d61e3a2c0a54b",
+  "entryRoute": "/pages/Home",
+  "capability": "system.timer",
+  "deterministicBuild": true
+}

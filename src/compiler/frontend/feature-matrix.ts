@@ -9,9 +9,11 @@ export interface FrontendFeature {
 export const FRONTEND_FEATURE_MATRIX: readonly FrontendFeature[] = Object.freeze([
   feature('ux.fragment.app-script-optional-style', 'ux', 'supported', 'case001', 'frontend'),
   feature('ux.fragment.page-template-script-style', 'ux', 'supported', 'case001', 'frontend'),
-  feature('template.tag.div/text/input', 'ux', 'supported', 'case001', 'lowering'),
-  feature('template.attr.class/type/value', 'ux', 'supported', 'case001', 'lowering'),
+  feature('template.tag.div/text/image/input/switch/slider/picker/list/scroll/video/tabs', 'ux', 'supported', 'case001', 'lowering'),
+  feature('template.attr.class/type/value/src/video/tabs', 'ux', 'supported', 'case001', 'lowering'),
   feature('template.event.onclick', 'ux', 'supported', 'case001', 'lowering'),
+  feature('template.event.oninput/onchange/onfocus', 'ux', 'supported', 'case001', 'lowering'),
+  feature('template.event.onprepared/onstart/onpause/onfinish/onerror/ontimeupdate', 'ux', 'supported', 'case001', 'lowering'),
   feature('template.directive.if', 'ux', 'supported', 'case002', 'lowering'),
   feature('template.directive.for-tid', 'ux', 'supported', 'case002', 'lowering'),
   feature('template.event.capture/bubble-control', 'ux', 'rejectedV1', 'negative', 'frontend'),

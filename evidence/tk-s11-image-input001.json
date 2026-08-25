@@ -1,0 +1,22 @@
+{
+  "status": "PASS",
+  "case": "quickapp-code-test4",
+  "sourceManifest": "quickapp-examples/quickapp-code-test4/src/manifest.json",
+  "packagePath": "evidence/tk-s11-image-input001.rpk",
+  "packageByteLength": 13745,
+  "packageSha256": "39261198d35d4e22e61de0eb0bff92a9dd7492fb0b5ad756b4ab9dfee5c84a24",
+  "entryRoute": "/pages/ImageInput",
+  "hostComponents": [
+    "Image",
+    "Input"
+  ],
+  "inputEvents": [
+    "input",
+    "change",
+    "focus"
+  ],
+  "resources": [
+    "assets/images/logo.png"
+  ],
+  "deterministicBuild": true
+}

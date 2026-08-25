@@ -40,7 +40,7 @@ test('SourceFrontend parses Page UX into compiler-owned syntax and unresolved re
 
 test('SourceFrontend returns stable diagnostics for unsupported and malformed syntax', async () => {
   const cases: Array<[string, string]> = [
-    ['<template><video></video></template><script>export default {}</script>', 'TK_TEMPLATE_FEATURE_UNSUPPORTED_V1'],
+    ['<template><canvas></canvas></template><script>export default {}</script>', 'TK_TEMPLATE_FEATURE_UNSUPPORTED_V1'],
     ['<template><div>{{ }}</div></template><script>export default {}</script>', 'TK_TEMPLATE_SYNTAX_ERROR'],
     ['<template><div></div></template><script>const value = 1</script>', 'TK_SCRIPT_DEFAULT_EXPORT_REQUIRED'],
     ['<template><div></div></template><script>import("./x.js"); export default {}</script>', 'TK_SCRIPT_MODULE_REFERENCE_UNSUPPORTED'],

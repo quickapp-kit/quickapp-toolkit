@@ -25,7 +25,8 @@ test('Case 001 builds the frozen reachable closure and relations', async () => {
     ])
     assert.deepEqual(result.model.assets.map((asset) => asset.sourcePath), ['src/assets/images/logo.png'])
     assert.deepEqual(result.model.capabilities.map((item) => [item.name, item.status]), [
-      ['system.fetch', 'deferred'],
+      ['system.device', 'required'],
+      ['system.fetch', 'required'],
       ['system.prompt', 'required'],
       ['system.router', 'required'],
       ['system.shortcut', 'declaredOnly'],

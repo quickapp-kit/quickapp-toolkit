@@ -88,6 +88,124 @@ test('TK-S04 Case 002 lowers if and keyed for with nearest Block scope', async (
   }
 })
 
+test('TK-S13 list-001 lowers explicit List/Scroll and scroll handlers', async () => {
+  const { result, dispose } = await buildCase('showcases/list-001')
+  try {
+    const lowered = lower(result)
+    assert.equal(lowered.status, 'success')
+    if (lowered.status !== 'success') return
+    const page = lowered.model.pages[0]
+    assert.ok(page)
+    if (page === undefined) return
+    assert.deepEqual(page.nodes.map((node) => node.host.type).filter((type) => type === 'List' || type === 'Scroll'), ['Scroll', 'List'])
+    assert.deepEqual(page.handlers.map((handler) => handler.eventType), ['scroll', 'scrollend', 'scrolltop', 'scrollbottom', 'click'])
+    const listBlock = page.blocks.find((block) => block.kind === 'for')
+    assert.ok(listBlock)
+    if (listBlock?.controller.kind === 'for') assert.deepEqual(listBlock.controller.keyPath, ['id'])
+  } finally {
+    dispose()
+  }
+})
+
+test('TK-S14 media-001 lowers Video props and lifecycle handlers', async () => {
+  const { result, dispose } = await buildCase('showcases/media-001')
+  try {
+    const lowered = lower(result)
+    assert.equal(lowered.status, 'success')
+    if (lowered.status !== 'success') return
+    const page = lowered.model.pages[0]
+    assert.ok(page)
+    if (page === undefined) return
+    const video = page.nodes.find((node) => node.host.type === 'Video')
+    assert.deepEqual(video?.host.props, {
+      src: 'https://example.invalid/quickapp-kit/demo.mp4',
+      poster: 'assets/images/media-poster.png',
+      autoplay: false,
+      controls: true,
+      muted: true,
+    })
+    assert.deepEqual(page.handlers.map((handler) => handler.eventType), ['prepared', 'start', 'pause', 'finish', 'error', 'timeupdate'])
+  } finally {
+    dispose()
+  }
+})
+
+test('TK-S15 url-001 lowers internal, external and webview links', async () => {
+  const { result, dispose } = await buildCase('showcases/url-001')
+  try {
+    const lowered = lower(result)
+    assert.equal(lowered.status, 'success')
+    if (lowered.status !== 'success') return
+    const home = lowered.model.pages.find((page) => page.route === '/pages/Home')
+    assert.ok(home)
+    if (home === undefined) return
+    assert.deepEqual(home.nodes.filter((node) => node.host.type === 'Button').map((node) => (node.host.props as { readonly text?: string }).text), [
+      '应用内详情',
+      '系统浏览器',
+      '平台 WebView',
+    ])
+    assert.deepEqual(home.handlers.map((handler) => handler.eventType), ['click', 'click', 'click'])
+    assert.deepEqual(home.handlers.map((handler) => handler.methodName), [
+      '__qak_link_1',
+      '__qak_link_2',
+      '__qak_link_3',
+    ])
+    assert.deepEqual(home.module.references.filter((reference) => reference.kind === 'capability').map((reference) => reference.targets), [
+      ['@app-module/system.router'],
+      ['@app-module/system.openUrl'],
+      ['@app-module/system.webview'],
+    ])
+  } finally {
+    dispose()
+  }
+})
+
+test('TK-S16 tabs-001 lowers controlled Tabs and selected binding', async () => {
+  const { result, dispose } = await buildCase('showcases/tabs-001')
+  try {
+    const lowered = lower(result)
+    assert.equal(lowered.status, 'success')
+    if (lowered.status !== 'success') return
+    const page = lowered.model.pages[0]
+    assert.ok(page)
+    if (page === undefined) return
+    const tabs = page.nodes.find((node) => node.host.type === 'Tabs')
+    assert.deepEqual(tabs?.host.props, { items: '首页|任务|我的', selected: 0 })
+    assert.deepEqual(page.bindings.map((binding) => [binding.target.name, binding.resultType]), [['selected', 'number'], ['text', 'string']])
+    assert.deepEqual(page.handlers.map((handler) => handler.eventType), ['change'])
+    assert.equal(page.handlers[0]?.methodName, 'onTabChange')
+  } finally {
+    dispose()
+  }
+})
+
+test('TK-S04 single-class styles do not leak to descendants in the golden app', async () => {
+  const { result, dispose } = await buildCase('quickapp-code-test5')
+  try {
+    const lowered = lower(result)
+    assert.equal(lowered.status, 'success')
+    if (lowered.status !== 'success') return
+    const page = lowered.model.pages.find((candidate) => candidate.route === '/pages/Home')
+    assert.ok(page)
+    if (page === undefined) return
+
+    const root = page.nodes.find((node) => node.templateNodeId === 1)
+    const title = page.nodes.find((node) => node.templateNodeId === 2)
+    const updateButton = page.nodes.find((node) => node.templateNodeId === 4)
+    assert.equal(root?.host.style.width?.value, 300)
+    assert.equal(root?.host.style.height?.value, 560)
+    assert.equal(title?.host.style.width, undefined)
+    assert.equal(title?.host.style.height, undefined)
+    assert.equal(title?.host.style.backgroundColor, undefined)
+    assert.equal(updateButton?.host.style.width?.value, 220)
+    assert.equal(updateButton?.host.style.height?.value, 44)
+    assert.equal(updateButton?.host.style.backgroundColor, '#00C800')
+    assert.equal(updateButton?.host.style.paddingTop, undefined)
+  } finally {
+    dispose()
+  }
+})
+
 test('TK-S04 repeated builds are deterministic and do not retain mutable session state', async () => {
   const first = await buildCase('quickapp-code-test1')
   const second = await buildCase('quickapp-code-test1')
@@ -213,7 +331,7 @@ function lower(result: GraphBuildResult, limits?: Readonly<Record<string, number
     } })
 }
 
-async function buildCase(caseName: 'quickapp-code-test1' | 'quickapp-code-test2'): Promise<{ result: GraphBuildResult; dispose(): void }> {
+async function buildCase(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001'): Promise<{ result: GraphBuildResult; dispose(): void }> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifest = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const result = await new ModuleGraphBuilder().build({

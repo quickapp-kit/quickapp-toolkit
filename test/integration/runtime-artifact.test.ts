@@ -123,6 +123,224 @@ test('TK-S08 BINDING-001 emits a real RPK with reactive state dependencies', asy
   }
 })
 
+test('TK-S09 Case 002 emits real block definitions and a deterministic RPK', async () => {
+  const input = await buildCase001Input('quickapp-code-test2')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const artifact = builder.build(input.request)
+    assert.equal(artifact.status, 'success')
+    if (artifact.status !== 'success') return
+    assert.equal(artifact.metadata.packageId, 'com.quickappkit.contract.case2')
+    assert.equal(artifact.metadata.entryRoute, '/pages/Contract')
+    const bundle = artifact.members.find((entry) => entry.descriptor.path === 'pages/pages/Contract/index.js')
+    assert.ok(bundle)
+    const source = Buffer.from(bundle.bytes).toString('utf8')
+    assert.match(source, /__qak_initial_blocks__/)
+    assert.match(source, /kind: "removeBlock"/)
+    assert.match(source, /kind: "moveBlock"/)
+    assert.match(source, /templateBlockId: 1/)
+    assert.match(source, /templateBlockId: 2/)
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s09-case002.rpk'), Buffer.from(artifact.packageBytes))
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s09-case002.json'), `${JSON.stringify({
+      status: 'PASS',
+      case: 'quickapp-code-test2',
+      sourceManifest: 'quickapp-examples/quickapp-code-test2/src/manifest.json',
+      packagePath: 'evidence/tk-s09-case002.rpk',
+      packageByteLength: artifact.packageBytes.length,
+      packageSha256: sha256(artifact.packageBytes),
+      entryRoute: artifact.metadata.entryRoute,
+      requiredRuntimeOperations: ['updateBinding', 'removeBlock', 'moveBlock'],
+      deterministicBuild: true,
+    }, null, 2)}\n`)
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('TK-S10 BLOCK-001 emits keyed lifecycle operations and a deterministic RPK', async () => {
+  const input = await buildCase001Input('quickapp-code-test3')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const artifact = builder.build(input.request)
+    assert.equal(artifact.status, 'success')
+    if (artifact.status !== 'success') return
+    assert.equal(artifact.metadata.packageId, 'com.quickappkit.block.case1')
+    assert.equal(artifact.metadata.entryRoute, '/pages/Contract')
+    const bundle = artifact.members.find((entry) => entry.descriptor.path === 'pages/pages/Contract/index.js')
+    assert.ok(bundle)
+    const source = Buffer.from(bundle.bytes).toString('utf8')
+    assert.match(source, /blockGenerations/)
+    assert.match(source, /handlers: handlers/)
+    assert.match(source, /kind: "instantiateBlock"/)
+    assert.match(source, /kind: "removeBlock"/)
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s10-block001.rpk'), Buffer.from(artifact.packageBytes))
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s10-block001.json'), `${JSON.stringify({
+      status: 'PASS',
+      case: 'quickapp-code-test3',
+      sourceManifest: 'quickapp-examples/quickapp-code-test3/src/manifest.json',
+      packagePath: 'evidence/tk-s10-block001.rpk',
+      packageByteLength: artifact.packageBytes.length,
+      packageSha256: sha256(artifact.packageBytes),
+      entryRoute: artifact.metadata.entryRoute,
+      requiredRuntimeOperations: ['instantiateBlock', 'removeBlock'],
+      deterministicBuild: true,
+    }, null, 2)}\n`)
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('TK-S11 Image/Input emits a real RPK with host components and local resource', async () => {
+  const input = await buildCase001Input('quickapp-code-test4')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const artifact = builder.build(input.request)
+    assert.equal(artifact.status, 'success')
+    if (artifact.status !== 'success') return
+    assert.equal(artifact.metadata.packageId, 'com.quickappkit.imageinput.case1')
+    assert.equal(artifact.metadata.entryRoute, '/pages/ImageInput')
+    assert.deepEqual(artifact.metadata.resources.map((resource) => resource.path), ['assets/images/logo.png'])
+    const pageIr = artifact.members.find((entry) => entry.descriptor.path === 'quickapp-kit/pages/pages/ImageInput/index.ir.json')
+    assert.ok(pageIr)
+    const page = JSON.parse(Buffer.from(pageIr.bytes).toString('utf8')) as { nodes: readonly { host: { type: string } }[]; handlers: readonly { eventType: string }[] }
+    assert.deepEqual(page.nodes.map((node) => node.host.type).filter((type) => type === 'Image' || type === 'Input'), ['Image', 'Input'])
+    assert.deepEqual(page.handlers.map((handler) => handler.eventType), ['input', 'change', 'focus'])
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s11-image-input001.rpk'), Buffer.from(artifact.packageBytes))
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s11-image-input001.json'), `${JSON.stringify({
+      status: 'PASS',
+      case: 'quickapp-code-test4',
+      sourceManifest: 'quickapp-examples/quickapp-code-test4/src/manifest.json',
+      packagePath: 'evidence/tk-s11-image-input001.rpk',
+      packageByteLength: artifact.packageBytes.length,
+      packageSha256: sha256(artifact.packageBytes),
+      entryRoute: artifact.metadata.entryRoute,
+      hostComponents: ['Image', 'Input'],
+      inputEvents: ['input', 'change', 'focus'],
+      resources: ['assets/images/logo.png'],
+      deterministicBuild: true,
+    }, null, 2)}\n`)
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('TK-S12 LVGL P0 emits one real multi-page RPK baseline', async () => {
+  const input = await buildCase001Input('quickapp-code-test5')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const artifact = builder.build(input.request)
+    assert.equal(artifact.status, 'success')
+    if (artifact.status !== 'success') return
+    assert.equal(artifact.metadata.packageId, 'com.quickappkit.lvgl.p0')
+    assert.equal(artifact.metadata.entryRoute, '/pages/Home')
+    assert.deepEqual(artifact.metadata.pages.map((page) => page.manifestRoute), ['pages/Detail', 'pages/Home'])
+    const home = artifact.members.find((entry) => entry.descriptor.path === 'quickapp-kit/pages/pages/Home/index.ir.json')
+    const detail = artifact.members.find((entry) => entry.descriptor.path === 'quickapp-kit/pages/pages/Detail/index.ir.json')
+    assert.ok(home)
+    assert.ok(detail)
+    const homePage = JSON.parse(Buffer.from(home.bytes).toString('utf8')) as { nodes: readonly { host: { type: string }; block?: unknown }[]; handlers: readonly { eventType: string }[] }
+    assert.deepEqual(homePage.nodes.map((node) => node.host.type).filter((type) => type === 'View' || type === 'Text' || type === 'Button'), ['View', 'Text', 'Text', 'Button', 'Text', 'View', 'Text', 'Button'])
+    assert.deepEqual(homePage.handlers.map((handler) => handler.eventType), ['click', 'click'])
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s12-lvgl-p0.rpk'), Buffer.from(artifact.packageBytes))
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-s12-lvgl-p0.json'), `${JSON.stringify({
+      status: 'PASS',
+      case: 'quickapp-code-test5',
+      sourceManifest: 'quickapp-examples/quickapp-code-test5/src/manifest.json',
+      packagePath: 'evidence/tk-s12-lvgl-p0.rpk',
+      packageByteLength: artifact.packageBytes.length,
+      packageSha256: sha256(artifact.packageBytes),
+      entryRoute: artifact.metadata.entryRoute,
+      routes: ['/pages/Home', '/pages/Detail'],
+      requiredRuntimeOperations: ['updateBinding', 'removeBlock', 'moveBlock', 'navigationPush', 'navigationClose'],
+      deterministicBuild: true,
+    }, null, 2)}\n`)
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('Timer 001 emits a real RPK with the typed timer capability', async () => {
+  const input = await buildCase001Input('timer-001')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const artifact = builder.build(input.request)
+    assert.equal(artifact.status, 'success')
+    if (artifact.status !== 'success') return
+    assert.equal(artifact.metadata.packageId, 'com.quickappkit.timer001')
+    assert.equal(artifact.metadata.entryRoute, '/pages/Home')
+    assert.ok(input.manifest.features.includes('system.timer'))
+    const pageBundle = artifact.members.find((entry) => entry.descriptor.path === 'pages/pages/Home/index.js')
+    assert.ok(pageBundle)
+    const source = Buffer.from(pageBundle.bytes).toString('utf8')
+    assert.match(source, /@app-module\/system\.timer/)
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-timer-001.rpk'), Buffer.from(artifact.packageBytes))
+    await writeFile(path.join(path.resolve(process.cwd(), 'evidence'), 'tk-timer-001.json'), `${JSON.stringify({
+      status: 'PASS',
+      case: 'timer-001',
+      sourceManifest: 'quickapp-examples/timer-001/src/manifest.json',
+      packagePath: 'evidence/tk-timer-001.rpk',
+      packageByteLength: artifact.packageBytes.length,
+      packageSha256: sha256(artifact.packageBytes),
+      entryRoute: artifact.metadata.entryRoute,
+      capability: 'system.timer',
+      deterministicBuild: true,
+    }, null, 2)}\n`)
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('B6 url-001 emits a deterministic RPK with typed URL capabilities', async () => {
+  const input = await buildCase001Input('showcases/url-001')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const first = builder.build(input.request)
+    assert.equal(first.status, 'success')
+    if (first.status !== 'success') return
+    assert.equal(first.metadata.packageId, 'com.quickappkit.url001')
+    assert.deepEqual(first.metadata.pages.map((page) => page.manifestRoute), ['pages/Detail', 'pages/Home'])
+    assert.deepEqual([...input.manifest.features].sort(), ['system.router', 'system.openUrl', 'system.webview'].sort())
+    const home = first.members.find((entry) => entry.descriptor.path === 'pages/pages/Home/index.js')
+    assert.ok(home)
+    const source = Buffer.from(home?.bytes ?? []).toString('utf8')
+    assert.match(source, /@app-module\/system\.router/)
+    assert.match(source, /@app-module\/system\.openUrl/)
+    assert.match(source, /@app-module\/system\.webview/)
+    const second = builder.build(input.request)
+    assert.equal(second.status, 'success')
+    if (second.status !== 'success') return
+    assert.deepEqual(second.packageBytes, first.packageBytes)
+    assert.equal(sha256(second.packageBytes), sha256(first.packageBytes))
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('B3.5 tabs-001 emits a deterministic RPK with controlled selected binding', async () => {
+  const input = await buildCase001Input('showcases/tabs-001')
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const first = builder.build(input.request)
+    assert.equal(first.status, 'success')
+    if (first.status !== 'success') return
+    assert.equal(first.metadata.packageId, 'com.quickappkit.tabs001')
+    const home = first.members.find((entry) => entry.descriptor.path === 'quickapp-kit/pages/pages/Home/index.ir.json')
+    assert.ok(home)
+    const page = JSON.parse(Buffer.from(home?.bytes ?? []).toString('utf8')) as { nodes: readonly { host: { type: string; props: Record<string, unknown> } }[]; bindings: readonly { target: { name: string } }[]; handlers: readonly { eventType: string }[] }
+    const tabs = page.nodes.find((node) => node.host.type === 'Tabs')
+    assert.deepEqual(tabs?.host.props, { items: '首页|任务|我的', selected: 0 })
+    assert.deepEqual(page.bindings.map((binding) => [binding.target.name]), [['selected'], ['text']])
+    assert.deepEqual(page.handlers.map((handler) => handler.eventType), ['change'])
+    const second = builder.build(input.request)
+    assert.equal(second.status, 'success')
+    if (second.status !== 'success') return
+    assert.deepEqual(second.packageBytes, first.packageBytes)
+    assert.equal(sha256(second.packageBytes), sha256(first.packageBytes))
+  } finally {
+    input.access.dispose()
+  }
+})
+
 interface Case001Input {
   readonly access: SourceAccess
   readonly manifest: NonNullable<Awaited<ReturnType<typeof buildGraph>>['model']>['manifest']
@@ -130,7 +348,7 @@ interface Case001Input {
   readonly request: RuntimeArtifactRequest
 }
 
-async function buildCase001Input(caseName: 'quickapp-code-test1' | 'binding-001' = 'quickapp-code-test1'): Promise<Case001Input> {
+async function buildCase001Input(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'showcases/url-001' | 'showcases/tabs-001' = 'quickapp-code-test1'): Promise<Case001Input> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifestSource = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const graph = await buildGraph(access, manifestSource)

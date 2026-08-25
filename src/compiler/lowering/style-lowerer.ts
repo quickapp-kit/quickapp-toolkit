@@ -50,6 +50,7 @@ export interface StyleLoweringRequest {
 
 const HOST_PROPERTIES = new Set([
   'width', 'height', 'margin', 'margin-top', 'margin-right', 'margin-bottom', 'margin-left',
+  'padding', 'padding-top', 'padding-right', 'padding-bottom', 'padding-left',
   'flex-direction', 'justify-content', 'align-items', 'background-color', 'color',
   'border-radius', 'font-size', 'text-align',
 ])
@@ -293,21 +294,29 @@ function parseSelector(text: string, file: string, span: SourceSpan): Selector {
 }
 
 function matches(selector: Selector, target: StyleTarget): boolean {
-  const chain = [...target.ancestors, target.classes]
-  let index = chain.length - 1
-  for (let selectorIndex = selector.compounds.length - 1; selectorIndex >= 0; selectorIndex -= 1) {
+  const last = selector.compounds[selector.compounds.length - 1]
+  if (last === undefined || !hasAllClasses(target.classes, last)) return false
+
+  // The last compound matches the target itself. Only preceding compounds
+  // may walk ancestors; this keeps `.page` from styling every descendant.
+  let ancestorIndex = target.ancestors.length - 1
+  for (let selectorIndex = selector.compounds.length - 2; selectorIndex >= 0; selectorIndex -= 1) {
     const compound = selector.compounds[selectorIndex] as readonly string[]
     let found = false
-    for (; index >= 0; index -= 1) {
-      if (compound.every((className) => (chain[index] as readonly string[]).includes(className))) {
+    for (; ancestorIndex >= 0; ancestorIndex -= 1) {
+      if (hasAllClasses(target.ancestors[ancestorIndex] as readonly string[], compound)) {
         found = true
-        index -= 1
+        ancestorIndex -= 1
         break
       }
     }
     if (!found) return false
   }
   return true
+}
+
+function hasAllClasses(actual: readonly string[], required: readonly string[]): boolean {
+  return required.every((className) => actual.includes(className))
 }
 
 function splitArguments(value: string, file: string, span: SourceSpan): string[] {
@@ -359,6 +368,18 @@ function applyDeclaration(output: Record<string, unknown>, property: string, val
     case 'margin-right': output.marginRight = length(value, file, span, true); return
     case 'margin-bottom': output.marginBottom = length(value, file, span, true); return
     case 'margin-left': output.marginLeft = length(value, file, span, true); return
+    case 'padding': {
+      const values = expandFour(splitLengthList(value, file, span, budget), file, span)
+      output.paddingTop = length(values[0] as string, file, span, false)
+      output.paddingRight = length(values[1] as string, file, span, false)
+      output.paddingBottom = length(values[2] as string, file, span, false)
+      output.paddingLeft = length(values[3] as string, file, span, false)
+      return
+    }
+    case 'padding-top': output.paddingTop = length(value, file, span, false); return
+    case 'padding-right': output.paddingRight = length(value, file, span, false); return
+    case 'padding-bottom': output.paddingBottom = length(value, file, span, false); return
+    case 'padding-left': output.paddingLeft = length(value, file, span, false); return
     case 'flex-direction': output.flexDirection = enumValue(value, ['row', 'column'], file, span); return
     case 'justify-content': output.justifyContent = enumValue(value, ['flex-start', 'center', 'flex-end', 'space-between'], file, span); return
     case 'align-items': output.alignItems = enumValue(value, ['flex-start', 'center', 'flex-end', 'stretch'], file, span); return
