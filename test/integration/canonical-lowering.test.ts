@@ -179,6 +179,26 @@ test('TK-S16 tabs-001 lowers controlled Tabs and selected binding', async () => 
   }
 })
 
+test('TK-S17 commerce-001 preserves selectedTab dependencies for all if blocks', async () => {
+  const { result, dispose } = await buildCase('showcases/commerce-001')
+  try {
+    const lowered = lower(result)
+    assert.equal(lowered.status, 'success')
+    if (lowered.status !== 'success') return
+    const home = lowered.model.pages.find((page) => page.route === '/pages/Home')
+    assert.ok(home)
+    if (home === undefined) return
+    const selectedTabBlocks = home.blocks.filter((block) =>
+      block.controller.kind === 'if' && block.controller.predicate.stateBindings.includes('selectedTab'))
+    assert.equal(selectedTabBlocks.length, 7)
+    assert.deepEqual(selectedTabBlocks.map((block) => block.controller.kind), Array(7).fill('if'))
+    assert.deepEqual(home.blocks.filter((block) => block.controller.kind === 'if' && block.controller.predicate.stateBindings.includes('loading')).length, 1)
+    assert.deepEqual(home.blocks.find((block) => block.kind === 'for')?.controller.kind, 'for')
+  } finally {
+    dispose()
+  }
+})
+
 test('TK-S04 single-class styles do not leak to descendants in the golden app', async () => {
   const { result, dispose } = await buildCase('quickapp-code-test5')
   try {
@@ -331,7 +351,7 @@ function lower(result: GraphBuildResult, limits?: Readonly<Record<string, number
     } })
 }
 
-async function buildCase(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001'): Promise<{ result: GraphBuildResult; dispose(): void }> {
+async function buildCase(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001' | 'showcases/commerce-001'): Promise<{ result: GraphBuildResult; dispose(): void }> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifest = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const result = await new ModuleGraphBuilder().build({

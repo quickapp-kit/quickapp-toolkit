@@ -3,7 +3,7 @@ import path from 'node:path'
 import { Ajv2020, type ErrorObject } from 'ajv/dist/2020.js'
 import type { ManifestSchemaValidator } from '../src/compiler/manifest/types.js'
 
-export function caseRoot(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001'): string {
+export function caseRoot(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001' | 'showcases/commerce-001'): string {
   return path.resolve(process.cwd(), '..', 'quickapp-examples', caseName)
 }
 

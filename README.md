@@ -12,6 +12,7 @@ quickapp run      → launch RPK in a local runtime
 
 Currently implemented (TK-S01):
 - CLI command registration (`build`, `inspect`, `run`)
+- Standard `SKILL.md` capability for any AI Agent to discover and call the Toolkit workflow
 - Workspace discovery and `quickapp.config.json` resolution
 - Bounded `SourceAccess` with path containment and change detection
 - Compiler frontend: UX/template/style/script parsing → Page IR model
