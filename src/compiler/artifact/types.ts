@@ -35,8 +35,12 @@ export interface ArtifactSchemaValidator {
 
 export interface RuntimeResourceInput {
   readonly path: string
-  readonly mediaType: 'application/octet-stream' | 'image/png' | 'image/jpeg'
+  readonly mediaType: 'application/octet-stream' | 'image/png' | 'image/jpeg' | 'video/mp4' | 'video/webm'
   readonly bytes: readonly number[]
+  readonly resourceId?: string
+  readonly width?: number
+  readonly height?: number
+  readonly durationMs?: number
 }
 
 export interface RuntimeArtifactRequest {
@@ -57,6 +61,10 @@ export interface ArtifactDescriptor {
   readonly mediaType: string
   readonly byteLength: number
   readonly sha256: string
+  readonly resourceId?: string
+  readonly width?: number
+  readonly height?: number
+  readonly durationMs?: number
 }
 
 export interface RuntimeRpkMember {

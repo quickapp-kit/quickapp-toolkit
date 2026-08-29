@@ -19,7 +19,7 @@ test('TK-S07 Case 001 produces a deterministic, Core-readable Runtime RPK', asyn
   try {
     const builder = new RuntimeArtifactBuilder()
     const first = builder.build(input.request)
-    assert.equal(first.status, 'success')
+    assert.equal(first.status, 'success', first.status === 'failure' ? JSON.stringify(first.diagnostics) : undefined)
     if (first.status !== 'success') return
 
     assert.equal(first.metadata.packageId, 'com.example.case1')
@@ -336,6 +336,70 @@ test('B3.5 tabs-001 emits a deterministic RPK with controlled selected binding',
     if (second.status !== 'success') return
     assert.deepEqual(second.packageBytes, first.packageBytes)
     assert.equal(sha256(second.packageBytes), sha256(first.packageBytes))
+  } finally {
+    input.access.dispose()
+  }
+})
+
+test('Media resource descriptors are deterministic and reject invalid static video inputs', async () => {
+  const input = await buildCase001Input()
+  try {
+    const builder = new RuntimeArtifactBuilder()
+    const videoBytes = [0, 0, 0, 0, 0x66, 0x74, 0x79, 0x70, 0x69, 0x73, 0x6f, 0x6d]
+    const request: RuntimeArtifactRequest = {
+      ...input.request,
+      resources: Object.freeze([Object.freeze({
+        path: 'assets/videos/test.mp4',
+        resourceId: 'assets/videos/test.mp4',
+        mediaType: 'video/mp4',
+        bytes: Object.freeze(videoBytes),
+        width: 320,
+        height: 180,
+        durationMs: 1000,
+      })]),
+    }
+    const first = builder.build(request)
+    assert.equal(first.status, 'success', first.status === 'failure' ? JSON.stringify(first.diagnostics) : undefined)
+    if (first.status !== 'success') return
+    assert.deepEqual(first.metadata.resources, [{
+      path: 'assets/videos/test.mp4',
+      resourceId: 'assets/videos/test.mp4',
+      mediaType: 'video/mp4',
+      byteLength: videoBytes.length,
+      sha256: sha256(videoBytes),
+      width: 320,
+      height: 180,
+      durationMs: 1000,
+    }])
+    const second = builder.build(request)
+    assert.equal(second.status, 'success')
+    if (second.status !== 'success') return
+    assert.deepEqual(second.packageBytes, first.packageBytes)
+    assert.equal(sha256(second.packageBytes), sha256(first.packageBytes))
+
+    const invalidFormat = builder.build({
+      ...request,
+      resources: Object.freeze([Object.freeze({
+        path: 'assets/videos/test.mp4',
+        resourceId: 'assets/videos/test.mp4',
+        mediaType: 'video/mp4',
+        bytes: Object.freeze([1, 2, 3]),
+      })]),
+    })
+    assert.equal(invalidFormat.status, 'failure')
+    if (invalidFormat.status === 'failure') assert.equal(invalidFormat.diagnostics[0]?.code, 'TK_ARTIFACT_INPUT_INVALID')
+
+    const invalidIdentity = builder.build({
+      ...request,
+      resources: Object.freeze([Object.freeze({
+        path: 'assets/videos/test.mp4',
+        resourceId: 'assets/videos/other.mp4',
+        mediaType: 'video/mp4',
+        bytes: Object.freeze(videoBytes),
+      })]),
+    })
+    assert.equal(invalidIdentity.status, 'failure')
+    if (invalidIdentity.status === 'failure') assert.equal(invalidIdentity.diagnostics[0]?.code, 'TK_ARTIFACT_INPUT_INVALID')
   } finally {
     input.access.dispose()
   }

@@ -7,7 +7,7 @@ import type { CanonicalLoweredAppModel, CanonicalModuleEntry } from '../lowering
 import type { ResolvedManifest } from '../manifest/types.js'
 import type { JsBundleArtifact, PageIrArtifact } from '../emitter/types.js'
 import { ArtifactIssue } from './artifact-issue.js'
-import { DEFAULT_ARTIFACT_LIMITS, type ArtifactDescriptor, type ArtifactLimits, type RuntimeArtifact, type RuntimeArtifactRequest, type RuntimeArtifactResult, type RuntimeMetadata, type RuntimeRpkMember } from './types.js'
+import { DEFAULT_ARTIFACT_LIMITS, type ArtifactDescriptor, type ArtifactLimits, type RuntimeArtifact, type RuntimeArtifactRequest, type RuntimeArtifactResult, type RuntimeMetadata, type RuntimeResourceInput, type RuntimeRpkMember } from './types.js'
 
 const RPK_RUNTIME_PATH = 'quickapp-kit/runtime.json'
 const FIXED_VERSION = {
@@ -75,7 +75,12 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
   })
   const resources = (request.resources ?? []).slice().sort((left, right) => compareUtf8(left.path, right.path)).map((resource) => {
     const bytes = toBytes(resource.bytes)
-    return { descriptor: descriptor(resource.path, resource.mediaType, bytes), bytes }
+    validateResource(resource, bytes, limits)
+    const video = resource.mediaType === 'video/mp4' || resource.mediaType === 'video/webm'
+    const metadata = video
+      ? { resourceId: resource.resourceId ?? resource.path, width: resource.width, height: resource.height, durationMs: resource.durationMs }
+      : {}
+    return { descriptor: descriptor(resource.path, resource.mediaType, bytes, metadata), bytes }
   })
   const metadata: RuntimeMetadata = {
     schemaVersion: 1,
@@ -171,10 +176,35 @@ function requiredPage(index: ReadonlyMap<string, PageIrArtifact>, moduleId: stri
   return page
 }
 
-function descriptor(path: string, mediaType: string, content: string | readonly number[]): ArtifactDescriptor {
+function descriptor(path: string, mediaType: string, content: string | readonly number[], metadata: Readonly<Record<string, unknown>> = {}): ArtifactDescriptor {
   const bytes = typeof content === 'string' ? toBytes(content) : content
   assertPath(path)
-  return Object.freeze({ path, mediaType, byteLength: bytes.length, sha256: sha256(bytes) })
+  return Object.freeze({ path, mediaType, byteLength: bytes.length, sha256: sha256(bytes), ...metadata }) as ArtifactDescriptor
+}
+
+function validateResource(resource: RuntimeResourceInput, bytes: readonly number[], limits: ArtifactLimits): void {
+  const mediaTypes = new Set(['application/octet-stream', 'image/png', 'image/jpeg', 'video/mp4', 'video/webm'])
+  assertPath(resource.path)
+  if (!mediaTypes.has(resource.mediaType)) throw new ArtifactIssue(ErrorCodes.artifactInputInvalid, `Unsupported resource MIME: ${resource.mediaType}`)
+  if (bytes.length === 0) throw new ArtifactIssue(ErrorCodes.artifactInputInvalid, `Resource is empty: ${resource.path}`)
+  if (bytes.length > limits.maxMemberBytes) throw new ArtifactIssue(ErrorCodes.artifactLimitExceeded, `Resource exceeds the artifact member limit: ${resource.path}`)
+  const video = resource.mediaType === 'video/mp4' || resource.mediaType === 'video/webm'
+  if (video) {
+    if (!resource.path.startsWith('assets/videos/')) throw new ArtifactIssue(ErrorCodes.artifactPathInvalid, `Static video must be under assets/videos/: ${resource.path}`)
+    if (resource.resourceId !== undefined && resource.resourceId !== resource.path) throw new ArtifactIssue(ErrorCodes.artifactInputInvalid, `Video resourceId must equal path: ${resource.path}`)
+    if (!hasSupportedVideoSignature(resource.mediaType, bytes)) throw new ArtifactIssue(ErrorCodes.artifactInputInvalid, `Video format does not match MIME: ${resource.path}`)
+  }
+  for (const [name, value] of [['width', resource.width], ['height', resource.height], ['durationMs', resource.durationMs]] as const) {
+    if (value !== undefined && (!Number.isSafeInteger(value) || value < 0 || (name !== 'durationMs' && value === 0))) {
+      throw new ArtifactIssue(ErrorCodes.artifactInputInvalid, `Invalid ${name} metadata: ${resource.path}`)
+    }
+  }
+}
+
+function hasSupportedVideoSignature(mediaType: RuntimeResourceInput['mediaType'], bytes: readonly number[]): boolean {
+  if (mediaType === 'video/mp4') return bytes.length >= 8 && String.fromCharCode(...bytes.slice(4, 8)) === 'ftyp'
+  if (mediaType === 'video/webm') return bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3
+  return true
 }
 
 function member(path: string, mediaType: string, bytes: readonly number[]): RuntimeRpkMember {
@@ -216,8 +246,8 @@ function makeZip(members: readonly RuntimeRpkMember[], limits: ArtifactLimits): 
     appendU32(output, bytes.length)
     appendU16(output, name.length)
     appendU16(output, 0)
-    output.push(...name)
-    output.push(...bytes)
+    appendBytes(output, name)
+    appendBytes(output, bytes)
     records.push({ member: entry, offset, crc })
   }
   const centralOffset = output.length
@@ -240,7 +270,7 @@ function makeZip(members: readonly RuntimeRpkMember[], limits: ArtifactLimits): 
     appendU16(output, 0)
     appendU32(output, 0)
     appendU32(output, record.offset)
-    output.push(...name)
+    appendBytes(output, name)
   }
   const centralBytes = output.length - centralOffset
   if (centralBytes > limits.maxZipCentralDirectoryBytes) throw new ArtifactIssue(ErrorCodes.artifactLimitExceeded, 'ZIP central directory exceeds limit')
@@ -271,6 +301,9 @@ function assertPath(path: string): void {
 }
 function appendU16(output: number[], value: number): void { output.push(value & 0xff, (value >>> 8) & 0xff) }
 function appendU32(output: number[], value: number): void { output.push(value >>> 0 & 0xff, value >>> 8 & 0xff, value >>> 16 & 0xff, value >>> 24 & 0xff) }
+function appendBytes(output: number[], bytes: Iterable<number>): void {
+  for (const byte of bytes) output.push(byte)
+}
 function crc32(bytes: readonly number[]): number {
   let crc = 0xffffffff
   for (const byte of bytes) {

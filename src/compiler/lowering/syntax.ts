@@ -171,6 +171,7 @@ export function assertDeepFrozen(value: unknown, seen = new WeakSet<object>()): 
   }
   if (!Object.isFrozen(object)) throw new TypeError('Canonical Lowering input is not deeply frozen')
   seen.add(object)
+  if (Array.isArray(value) && value.every(item => item === null || (typeof item !== 'object' && typeof item !== 'function'))) return
   if (isReadonlyMap(value)) {
     for (const [key, entry] of value) {
       assertDeepFrozen(key, seen)

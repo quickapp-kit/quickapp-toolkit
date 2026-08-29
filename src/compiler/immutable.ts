@@ -9,6 +9,11 @@ function freezeValue<T>(value: T, seen: WeakSet<object>): T {
   if (value instanceof Map || value instanceof Set) {
     throw new TypeError('Mutable Map and Set values require an immutable compiler-owned representation')
   }
+  if (Array.isArray(value)) {
+    if (value.every(item => item === null || (typeof item !== 'object' && typeof item !== 'function'))) {
+      return Object.freeze(value)
+    }
+  }
   seen.add(object)
   for (const key of Reflect.ownKeys(object)) {
     const descriptor = Object.getOwnPropertyDescriptor(object, key)

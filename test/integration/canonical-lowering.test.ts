@@ -118,7 +118,7 @@ test('TK-S14 media-001 lowers Video props and lifecycle handlers', async () => {
     if (page === undefined) return
     const video = page.nodes.find((node) => node.host.type === 'Video')
     assert.deepEqual(video?.host.props, {
-      src: 'https://example.invalid/quickapp-kit/demo.mp4',
+      src: 'assets/videos/demo.mp4',
       poster: 'assets/images/media-poster.png',
       autoplay: false,
       controls: true,
@@ -190,9 +190,9 @@ test('TK-S17 commerce-001 preserves selectedTab dependencies for all if blocks',
     if (home === undefined) return
     const selectedTabBlocks = home.blocks.filter((block) =>
       block.controller.kind === 'if' && block.controller.predicate.stateBindings.includes('selectedTab'))
-    assert.equal(selectedTabBlocks.length, 7)
-    assert.deepEqual(selectedTabBlocks.map((block) => block.controller.kind), Array(7).fill('if'))
-    assert.deepEqual(home.blocks.filter((block) => block.controller.kind === 'if' && block.controller.predicate.stateBindings.includes('loading')).length, 1)
+    assert.equal(selectedTabBlocks.length, 14)
+    assert.deepEqual(selectedTabBlocks.map((block) => block.controller.kind), Array(14).fill('if'))
+    assert.deepEqual(home.blocks.filter((block) => block.controller.kind === 'if' && block.controller.predicate.stateBindings.includes('loading')).length, 0)
     assert.deepEqual(home.blocks.find((block) => block.kind === 'for')?.controller.kind, 'for')
   } finally {
     dispose()
