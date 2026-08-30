@@ -3,3 +3,23 @@ dist/
 .test-dist/
 coverage/
 *.log
+
+# Evidence 产物（截图/日志/UI dump）默认不提交，仅 img/ 白名单目录可提交
+# 注意：evidence 下的 .rpk / .json 是验收输入，保留跟踪
+evidence/**/*.png
+evidence/**/*.jpg
+evidence/**/*.jpeg
+evidence/**/*.gif
+evidence/**/*.webp
+evidence/**/*.log
+evidence/**/*.xml
+evidence/**/*.txt
+evidence/*.png
+evidence/*.jpg
+evidence/*.jpeg
+evidence/*.gif
+evidence/*.webp
+evidence/*.log
+evidence/*.xml
+evidence/*.txt
+!evidence/**/img/**
