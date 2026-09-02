@@ -412,7 +412,7 @@ interface Case001Input {
   readonly request: RuntimeArtifactRequest
 }
 
-async function buildCase001Input(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'showcases/url-001' | 'showcases/tabs-001' = 'quickapp-code-test1'): Promise<Case001Input> {
+async function buildCase001Input(caseName: 'alliance-hap-case001' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'showcases/url-001' | 'showcases/tabs-001' = 'alliance-hap-case001'): Promise<Case001Input> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifestSource = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const graph = await buildGraph(access, manifestSource)
@@ -530,8 +530,8 @@ async function writeEvidence(input: Case001Input, artifact: Extract<Awaited<Retu
   await writeFile(path.join(evidenceRoot, 'tk-s07-case001-manifest.json'), `${JSON.stringify(input.manifest.raw, null, 2)}\n`)
   await writeFile(path.join(evidenceRoot, 'tk-s07.json'), `${JSON.stringify({
     status: 'PASS',
-    case: 'quickapp-code-test1',
-    sourceManifest: 'quickapp-examples/quickapp-code-test1/src/manifest.json',
+    case: 'alliance-hap-case001',
+    sourceManifest: 'quickapp-examples/alliance-hap-case001/src/manifest.json',
     packagePath: 'evidence/tk-s07-case001.rpk',
     packageByteLength: artifact.packageBytes.length,
     packageSha256: sha256(artifact.packageBytes),

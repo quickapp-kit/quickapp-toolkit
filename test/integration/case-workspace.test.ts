@@ -7,7 +7,7 @@ import { CancellationController } from '../../src/application/cancellation.js'
 import { WorkspaceResolver } from '../../src/workspace/workspace-resolver.js'
 
 for (const [name, directory] of [
-  ['Case 001', '../quickapp-examples/quickapp-code-test1'],
+  ['Case 001', '../quickapp-examples/alliance-hap-case001'],
   ['Case 002', '../quickapp-examples/quickapp-code-test2'],
   ['BLOCK-001', '../quickapp-examples/quickapp-code-test3'],
 ] as const) {

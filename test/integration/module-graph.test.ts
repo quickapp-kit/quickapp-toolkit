@@ -12,7 +12,7 @@ import { caseRoot, publicManifestValidator, validManifest } from '../compiler-he
 import { withTempDirectory } from '../helpers.js'
 
 test('Case 001 builds the frozen reachable closure and relations', async () => {
-  const { result, dispose } = await buildCase('quickapp-code-test1')
+  const { result, dispose } = await buildCase('alliance-hap-case001')
   try {
     assert.equal(result.status, 'success')
     if (result.status !== 'success') return
@@ -65,7 +65,7 @@ test('Case 002 builds only App and the declared Contract page', async () => {
 })
 
 test('Case 001 Widget parses only on explicit S03 request and declared device becomes required', async () => {
-  const access = new SourceAccess(caseRoot('quickapp-code-test1'), [])
+  const access = new SourceAccess(caseRoot('alliance-hap-case001'), [])
   try {
     const widget = await new SourceFrontend().parse({
       sourcePath: 'src/CardDemo/index.ux',
@@ -187,7 +187,7 @@ test('shared Style is parsed once and its transitive Style and asset relations p
 })
 
 test('Manifest, resolved model, ParsedSource values and ParsedSourceSet are runtime immutable', async () => {
-  const { result, dispose } = await buildCase('quickapp-code-test1')
+  const { result, dispose } = await buildCase('alliance-hap-case001')
   try {
     assert.equal(result.status, 'success')
     if (result.status !== 'success') return
@@ -221,8 +221,8 @@ test('Manifest, resolved model, ParsedSource values and ParsedSourceSet are runt
 })
 
 test('Graph output is deterministic for repeated Case 001 builds', async () => {
-  const first = await buildCase('quickapp-code-test1')
-  const second = await buildCase('quickapp-code-test1')
+  const first = await buildCase('alliance-hap-case001')
+  const second = await buildCase('alliance-hap-case001')
   try {
     assert.equal(first.result.status, 'success')
     assert.equal(second.result.status, 'success')
@@ -274,7 +274,7 @@ test('Graph cancellation prevents publication and repeated builds release sessio
   assert.equal(access.disposed, true)
 })
 
-async function buildCase(caseName: 'quickapp-code-test1' | 'quickapp-code-test2'): Promise<{ result: GraphBuildResult; dispose(): void }> {
+async function buildCase(caseName: 'alliance-hap-case001' | 'quickapp-code-test2'): Promise<{ result: GraphBuildResult; dispose(): void }> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifest = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const result = await new ModuleGraphBuilder().build({ manifest, sourceRoot: 'src', sourceAccess: access, frontend: new SourceFrontend(), schemaValidator: await publicManifestValidator(), cancellation: new CancellationController().token })

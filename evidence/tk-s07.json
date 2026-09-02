@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "case": "quickapp-code-test1",
-  "sourceManifest": "quickapp-examples/quickapp-code-test1/src/manifest.json",
+  "case": "alliance-hap-case001",
+  "sourceManifest": "quickapp-examples/alliance-hap-case001/src/manifest.json",
   "packagePath": "evidence/tk-s07-case001.rpk",
   "packageByteLength": 34785,
   "packageSha256": "9812df4762e3821b26040f8b0b26ce7689d3dcd9ea9eef803510a9b05f6f79ca",

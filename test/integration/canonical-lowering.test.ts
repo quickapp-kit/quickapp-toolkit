@@ -13,7 +13,7 @@ import { caseRoot, publicManifestValidator, validManifest } from '../compiler-he
 import { withTempDirectory } from '../helpers.js'
 
 test('TK-S04 Case 001 lowers Host, Style, Binding, Handler and module facts once', async () => {
-  const { result, dispose } = await buildCase('quickapp-code-test1')
+  const { result, dispose } = await buildCase('alliance-hap-case001')
   try {
     const lowered = lower(result)
     assert.equal(lowered.status, 'success')
@@ -227,8 +227,8 @@ test('TK-S04 single-class styles do not leak to descendants in the golden app', 
 })
 
 test('TK-S04 repeated builds are deterministic and do not retain mutable session state', async () => {
-  const first = await buildCase('quickapp-code-test1')
-  const second = await buildCase('quickapp-code-test1')
+  const first = await buildCase('alliance-hap-case001')
+  const second = await buildCase('alliance-hap-case001')
   try {
     const left = lower(first.result)
     const right = lower(second.result)
@@ -307,7 +307,7 @@ test('TK-S04 returns no partial model for budget and cancellation failures', asy
 })
 
 test('TK-S04 rejects mutable S02/S03 input before semantic traversal', async () => {
-  const { result, dispose } = await buildCase('quickapp-code-test1')
+  const { result, dispose } = await buildCase('alliance-hap-case001')
   try {
     assert.equal(result.status, 'success')
     if (result.status !== 'success') return
@@ -351,7 +351,7 @@ function lower(result: GraphBuildResult, limits?: Readonly<Record<string, number
     } })
 }
 
-async function buildCase(caseName: 'quickapp-code-test1' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001' | 'showcases/commerce-001'): Promise<{ result: GraphBuildResult; dispose(): void }> {
+async function buildCase(caseName: 'alliance-hap-case001' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001' | 'showcases/commerce-001'): Promise<{ result: GraphBuildResult; dispose(): void }> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifest = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const result = await new ModuleGraphBuilder().build({

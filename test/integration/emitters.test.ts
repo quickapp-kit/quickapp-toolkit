@@ -16,7 +16,7 @@ import { SourceAccess } from '../../src/workspace/source-access.js'
 import { caseRoot, publicManifestValidator } from '../compiler-helpers.js'
 
 test('TK-S05/TK-S06 Case 001 emit one ABI-consistent JS set and valid Page IR', async () => {
-  const { model, dispose } = await buildLowered('quickapp-code-test1')
+  const { model, dispose } = await buildLowered('alliance-hap-case001')
   try {
     const js = new JsModuleEmitter().emit({ model, cancellation: new CancellationController().token })
     assert.equal(js.status, 'success')
@@ -101,7 +101,7 @@ test('TK-S05/TK-S06 Case 002 preserve Block IDs and produce deterministic output
 })
 
 test('TK-S05/TK-S06 never publish partial output on cancellation or invalid public schema', async () => {
-  const { model, dispose } = await buildLowered('quickapp-code-test1')
+  const { model, dispose } = await buildLowered('alliance-hap-case001')
   try {
     const cancelled = new CancellationController()
     cancelled.cancel()
@@ -123,7 +123,7 @@ test('TK-S05/TK-S06 never publish partial output on cancellation or invalid publ
   }
 })
 
-async function buildLowered(caseName: 'quickapp-code-test1' | 'quickapp-code-test2'): Promise<{ model: NonNullable<Extract<CanonicalLoweringResult, { status: 'success' }>['model']>; dispose(): void }> {
+async function buildLowered(caseName: 'alliance-hap-case001' | 'quickapp-code-test2'): Promise<{ model: NonNullable<Extract<CanonicalLoweringResult, { status: 'success' }>['model']>; dispose(): void }> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifest = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const graph = await new ModuleGraphBuilder().build({

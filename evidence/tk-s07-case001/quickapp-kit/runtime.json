@@ -1,0 +1,125 @@
+{
+    "schemaVersion": 1,
+    "packageFormat": "quickapp-kit-rpk-v1",
+    "runtimeAbi": "quickapp-kit-runtime-v1",
+    "irVersion": 1,
+    "jsModuleAbi": "quickapp-kit-app-module-v1",
+    "packageId": "com.example.case1",
+    "toolkit": {
+        "name": "quickapp-toolkit",
+        "version": "0.1.0"
+    },
+    "buildMode": "debug",
+    "entryRoute": "/pages/Demo",
+    "app": {
+        "moduleId": "@quickapp-kit/app",
+        "dependencies": [
+            "@quickapp-kit/shared/helper/apis/index",
+            "@quickapp-kit/shared/helper/utils"
+        ],
+        "bundle": {
+            "path": "app.js",
+            "mediaType": "application/javascript",
+            "byteLength": 673,
+            "sha256": "08b1f55ff431a624559e85e328316b6c1461a5f60025161e5c9eea07413d0656"
+        }
+    },
+    "sharedModules": [
+        {
+            "moduleId": "@quickapp-kit/shared/helper/ajax",
+            "dependencies": [
+                "@quickapp-kit/shared/helper/utils"
+            ],
+            "bundle": {
+                "path": "shared/31d4851dc88ea63a12ff949dc57de9cc523f902fe993fc3545050130cd1a9296.js",
+                "mediaType": "application/javascript",
+                "byteLength": 1665,
+                "sha256": "536177e66b95bc978a5115c0de2634d0b5dc2b5402d2cb95ada59d8eaa0ff3ef"
+            }
+        },
+        {
+            "moduleId": "@quickapp-kit/shared/helper/apis/example",
+            "dependencies": [
+                "@quickapp-kit/shared/helper/ajax"
+            ],
+            "bundle": {
+                "path": "shared/4c03b75b34301513dbb3e08a7f32fd46c5b1b0051de428b57cba027885debefb.js",
+                "mediaType": "application/javascript",
+                "byteLength": 451,
+                "sha256": "dbeea2981c18f8e55f4fef1105b9510bb2a7e7bc37b71977ad8987ed05720f2d"
+            }
+        },
+        {
+            "moduleId": "@quickapp-kit/shared/helper/apis/index",
+            "dependencies": [
+                "@quickapp-kit/shared/helper/apis/example"
+            ],
+            "bundle": {
+                "path": "shared/357a0736958087965554a7cc57c8067ff5c571fb5830d4c4b8433ddd4a48f147.js",
+                "mediaType": "application/javascript",
+                "byteLength": 744,
+                "sha256": "8eb7fa2da96df1f85d7f443c24e0a4d563803b5c137ed84873edce39b1db304c"
+            }
+        },
+        {
+            "moduleId": "@quickapp-kit/shared/helper/utils",
+            "dependencies": [],
+            "bundle": {
+                "path": "shared/c1aa1454b80fb3db3d4b2c82368a056e981b581ebce51c5f02df380af49b5dea.js",
+                "mediaType": "application/javascript",
+                "byteLength": 546,
+                "sha256": "203c1722133ff3abe5e9d9a478ba01f1fe4879727fca3e4230c4d425a21feb69"
+            }
+        }
+    ],
+    "pages": [
+        {
+            "route": "/pages/Demo",
+            "manifestRoute": "pages/Demo",
+            "component": "index",
+            "moduleId": "@quickapp-kit/page/pages/Demo",
+            "dependencies": [],
+            "templateId": "page:/pages/Demo",
+            "bundle": {
+                "path": "pages/pages/Demo/index.js",
+                "mediaType": "application/javascript",
+                "byteLength": 7473,
+                "sha256": "6b8ee7de5c4d514b3e64ffb037c6b26f887916a72b7242d182b7d41d1f46f72c"
+            },
+            "pageIr": {
+                "path": "quickapp-kit/pages/pages/Demo/index.ir.json",
+                "mediaType": "application/json",
+                "byteLength": 994,
+                "sha256": "e5e53fcedd7edb1dd14d865ad3b87f34d68dcf59285420f05a6a09fabfcb60fd"
+            }
+        },
+        {
+            "route": "/pages/DemoDetail",
+            "manifestRoute": "pages/DemoDetail",
+            "component": "index",
+            "moduleId": "@quickapp-kit/page/pages/DemoDetail",
+            "dependencies": [],
+            "templateId": "page:/pages/DemoDetail",
+            "bundle": {
+                "path": "pages/pages/DemoDetail/index.js",
+                "mediaType": "application/javascript",
+                "byteLength": 7149,
+                "sha256": "02f66a8e257f3e392511e99248d8053c596cb5668b82af46bb9fc4911059054a"
+            },
+            "pageIr": {
+                "path": "quickapp-kit/pages/pages/DemoDetail/index.ir.json",
+                "mediaType": "application/json",
+                "byteLength": 2001,
+                "sha256": "0162055fb9d79d81768b0daf18a6eab02508f8524aa6dcb4ce8b527802c03cba"
+            }
+        }
+    ],
+    "resources": [
+        {
+            "path": "assets/images/logo.png",
+            "mediaType": "image/png",
+            "byteLength": 3106,
+            "sha256": "637df6d5db5115c774dad7510a20d60cf80feeb55cdcf5b522bb73e0bc557023"
+        }
+    ]
+}
