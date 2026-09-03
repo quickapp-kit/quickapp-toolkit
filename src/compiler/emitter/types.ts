@@ -26,6 +26,14 @@ export interface JsEmitterRequest {
   readonly model: CanonicalLoweredAppModel
   readonly cancellation: CancellationToken
   readonly limits?: Partial<EmitterLimits>
+  readonly framework?: FrameworkBundleInput
+}
+
+export interface FrameworkBundleInput {
+  readonly moduleId: string
+  readonly content: string
+  readonly sha256: string
+  readonly mode: 'shared'
 }
 
 export interface PageIrSchemaValidator {

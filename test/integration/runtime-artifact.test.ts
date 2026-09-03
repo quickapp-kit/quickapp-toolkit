@@ -291,7 +291,7 @@ test('Timer 001 emits a real RPK with the typed timer capability', async () => {
 })
 
 test('B6 url-001 emits a deterministic RPK with typed URL capabilities', async () => {
-  const input = await buildCase001Input('showcases/url-001')
+  const input = await buildCase001Input('baseline-cases/url-001')
   try {
     const builder = new RuntimeArtifactBuilder()
     const first = builder.build(input.request)
@@ -317,7 +317,7 @@ test('B6 url-001 emits a deterministic RPK with typed URL capabilities', async (
 })
 
 test('B3.5 tabs-001 emits a deterministic RPK with controlled selected binding', async () => {
-  const input = await buildCase001Input('showcases/tabs-001')
+  const input = await buildCase001Input('baseline-cases/tabs-001')
   try {
     const builder = new RuntimeArtifactBuilder()
     const first = builder.build(input.request)
@@ -412,7 +412,7 @@ interface Case001Input {
   readonly request: RuntimeArtifactRequest
 }
 
-async function buildCase001Input(caseName: 'alliance-hap-case001' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'showcases/url-001' | 'showcases/tabs-001' = 'alliance-hap-case001'): Promise<Case001Input> {
+async function buildCase001Input(caseName: 'alliance-hap-case001' | 'quickapp-code-test2' | 'quickapp-code-test3' | 'quickapp-code-test4' | 'quickapp-code-test5' | 'binding-001' | 'timer-001' | 'baseline-cases/url-001' | 'baseline-cases/tabs-001' = 'alliance-hap-case001'): Promise<Case001Input> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifestSource = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const graph = await buildGraph(access, manifestSource)

@@ -45,17 +45,25 @@ export class JsModuleEmitter {
       const modules = emissionOrder(request.model)
       if (modules.length > limits.maxBundles) throw new EmitterIssue(ErrorCodes.emitterLimitExceeded, 'Bundle count exceeds emitter limit')
       const bundles: JsBundleArtifact[] = []
+      if (request.framework !== undefined) {
+        const frameworkPath = `framework/${request.framework.moduleId.replace(/[^A-Za-z0-9_.-]/g, '_')}.js`
+        const frameworkMap = createSourceMap(frameworkPath, undefined, request.framework.content, limits)
+        bundles.push(Object.freeze({ moduleId: request.framework.moduleId, moduleKind: 'shared', dependencies: Object.freeze([]), path: frameworkPath, content: request.framework.content, sourceMap: frameworkMap }))
+      }
       let totalBytes = 0
       for (const module of modules) {
         request.cancellation.throwIfCancelled()
         const page = request.model.pages.find((candidate) => candidate.moduleId === module.moduleId)
-        const content = emitBundle(module, page, limits)
+        const content = emitBundle(module, page, limits, request.framework?.moduleId)
         const path = bundlePath(module, page)
         const sourceMap = createSourceMap(path, module, content, limits)
         totalBytes += utf8ByteLength(content) + utf8ByteLength(sourceMap.content)
         if (totalBytes > limits.maxGeneratedBytes) throw new EmitterIssue(ErrorCodes.emitterLimitExceeded, 'Generated JS and Source Map bytes exceed emitter limit', module.source.sourcePath, module.source.span)
         if (bundles.some((bundle) => bundle.path === path)) throw new EmitterIssue(ErrorCodes.emitterAbiInvalid, `Bundle path collision: ${path}`, module.source.sourcePath, module.source.span)
-        bundles.push(Object.freeze({ moduleId: module.moduleId, moduleKind: module.moduleKind, dependencies: module.dependencies, path, content, sourceMap }))
+        const dependencies = module.moduleKind === 'page' && request.framework !== undefined
+          ? Object.freeze([...new Set([...module.dependencies, request.framework.moduleId])].sort(compareUtf8))
+          : module.dependencies
+        bundles.push(Object.freeze({ moduleId: module.moduleId, moduleKind: module.moduleKind, dependencies, path, content, sourceMap }))
       }
       return Object.freeze({ status: 'success', bundles: Object.freeze(bundles), diagnostics: Object.freeze(sortDiagnostics(diagnostics)) })
     } catch (error) {
@@ -100,16 +108,43 @@ function emissionOrder(model: CanonicalLoweredAppModel): readonly CanonicalModul
   return Object.freeze([model.appModule, ...shared, ...pages])
 }
 
-function emitBundle(module: CanonicalModuleEntry, page: CanonicalLoweredPageModel | undefined, limits: EmitterLimits): string {
+function findStaticRequireIds(lines: readonly string[]): readonly string[] {
+  const ids = new Set<string>()
+  const pattern = /\$app_require\$\("([^"\\]+)"\)/g
+  for (const line of lines) {
+    let match: RegExpExecArray | null
+    while ((match = pattern.exec(line)) !== null) ids.add(match[1] as string)
+  }
+  return [...ids]
+}
+
+function emitBundle(module: CanonicalModuleEntry, page: CanonicalLoweredPageModel | undefined, limits: EmitterLimits, frameworkModuleId?: string): string {
   const targetBySpecifier = new Map<string, string>()
   for (const reference of module.references) if (reference.targets.length === 1) targetBySpecifier.set(reference.specifier, reference.targets[0] as string)
   const contextByStartByte = new Map<number, CanonicalModuleReference>()
   for (const reference of module.references) if (reference.kind === 'context') contextByStartByte.set(reference.source.span.startByte, reference)
   const context: PrinterContext = { module, targetBySpecifier, contextByStartByte }
   const defaultExport = findDefaultExport(module.program)
-  const body = nodeArray(module.program, 'body').filter((node) => node.type !== 'ExportDefaultDeclaration').map((node) => printTopLevel(node, context)).filter((line) => line.length > 0)
+  let body = nodeArray(module.program, 'body').filter((node) => node.type !== 'ExportDefaultDeclaration').map((node) => printTopLevel(node, context)).filter((line) => line.length > 0)
   const lines: string[] = []
-  lines.push(`$app_define$(${quote(module.moduleId)}, ${JSON.stringify(module.dependencies)}, function ($app_require$, module, exports) {`)
+  const dependencies = module.moduleKind === 'page' && frameworkModuleId !== undefined
+    ? [...new Set([...module.dependencies, frameworkModuleId])].sort(compareUtf8)
+    : module.dependencies
+  lines.push(`$app_define$(${quote(module.moduleId)}, ${JSON.stringify(dependencies)}, function ($app_require$, module, exports) {`)
+  const actionDependencies = frameworkModuleId !== undefined && module.moduleKind === 'page' && page !== undefined
+    ? page.handlers.filter((handler) => handler.action?.kind === 'url').map((handler) => {
+      const action = handler.action
+      return action?.kind === 'url' ? action.mode === 'router' ? '@app-module/system.router' : action.mode === 'external' ? '@app-module/system.openUrl' : '@app-module/system.webview' : ''
+    }).filter((id) => id.length > 0)
+    : []
+  const dependencyIds = frameworkModuleId === undefined ? [] : [...new Set([...dependencies, ...actionDependencies, ...findStaticRequireIds(body)])].sort(compareUtf8)
+  const aliases = new Map(dependencyIds.map((id) => [id, `__qak_dep_${createHash('sha256').update(id, 'utf8').digest('hex').slice(0, 12)}`]))
+  body = body.map((statement) => {
+    let result = statement
+    for (const [id, alias] of aliases) result = result.replaceAll(`$app_require$(${quote(id)})`, alias)
+    return result
+  })
+  for (const [id, alias] of aliases) lines.push(`  const ${alias} = $app_require$(${quote(id)});`)
   for (const statement of body) lines.push(`  ${statement}`)
   if (module.moduleKind === 'shared') {
     lines.push(`  module.exports = ${defaultExport === undefined ? '{}' : `{ default: ${print(defaultExport, context)} }`};`)
@@ -213,7 +248,7 @@ function emitBundle(module: CanonicalModuleEntry, page: CanonicalLoweredPageMode
     lines.push('  module.exports = {')
     lines.push('    schemaVersion: 1,')
     lines.push(`    kind: ${quote(kind)},`)
-    const vm = kind === 'page' && page !== undefined ? printPageVm(defaultExport, page, context) : print(defaultExport, context)
+    const vm = kind === 'page' && page !== undefined ? printPageVm(defaultExport, page, context, frameworkModuleId) : print(defaultExport, context)
     lines.push(`    ${factoryName}: function (context) { return ${vm}; },`)
     if (kind === 'page' && page !== undefined) {
       lines.push('    bindingEvaluators: {')
@@ -420,7 +455,7 @@ function printProperty(node: SyntaxNode, context: PrinterContext): string {
   return `${keyText}: ${print(value, context)}`
 }
 
-function printPageVm(defaultExport: SyntaxNode, page: CanonicalLoweredPageModel, context: PrinterContext): string {
+function printPageVm(defaultExport: SyntaxNode, page: CanonicalLoweredPageModel, context: PrinterContext, frameworkModuleId?: string): string {
   if (defaultExport.type !== 'ObjectExpression') throw new EmitterIssue(ErrorCodes.emitterAbiInvalid, 'Page default export must be an object', context.module.source.sourcePath, defaultExport.span)
   const members = nodeArray(defaultExport, 'properties').filter((entry) => entry.type !== 'Property' || propertyName(entry) !== 'private')
   const fields = page.stateFields.map((field) => `${quote(field.name)}: ${print(field.initializer, context)}`)
@@ -447,19 +482,21 @@ function printPageVm(defaultExport: SyntaxNode, page: CanonicalLoweredPageModel,
     return `${quote(String(block.templateBlockId))}: { templateBlockId: ${block.templateBlockId}, kind: "for", parentTemplateNodeId: ${block.parentTemplateNodeId}, staticIndex: ${staticIndex}, deps: ${JSON.stringify(deps)}, indexAlias: ${quote(block.controller.indexAlias)}, itemAlias: ${quote(block.controller.itemAlias)}, bindings: { ${blockBindings.join(', ')} }, handlers: ${handlerText}, evaluate: function (scope) { return ${printExpression(block.controller.iterable, context)}; }, key: function (scope) { return ${printExpression(block.controller.keyExpression, context)}; } }`
   })
   const target = `{ ${[...fields, ...projectedMembers].join(', ')} }`
+  const dependencyAlias = (moduleId: string): string => `__qak_dep_${createHash('sha256').update(moduleId, 'utf8').digest('hex').slice(0, 12)}`
   const linkMethods = page.handlers.filter((handler) => handler.action?.kind === 'url').map((handler) => {
     const action = handler.action
     if (action === undefined || action.kind !== 'url') throw new EmitterIssue(ErrorCodes.emitterAbiInvalid, 'URL handler action is absent', context.module.source.sourcePath, handler.source.span)
     const expression = action.mode === 'router'
-      ? `$app_require$("@app-module/system.router").default.push({ uri: ${quote(action.url)} })`
+      ? `${dependencyAlias('@app-module/system.router')}.default.push({ uri: ${quote(action.url)} })`
       : action.mode === 'external'
-        ? `$app_require$("@app-module/system.openUrl").default.open({ url: ${quote(action.url)} })`
-        : `$app_require$("@app-module/system.webview").default.open({ url: ${quote(action.url)} })`
+        ? `${dependencyAlias('@app-module/system.openUrl')}.default.open({ url: ${quote(action.url)} })`
+        : `${dependencyAlias('@app-module/system.webview')}.default.open({ url: ${quote(action.url)} })`
     return `target[${quote(handler.methodName)}] = function () { return ${expression}; };`
   })
+  const vmFactory = frameworkModuleId === undefined ? '__qak_reactive_page_vm__' : `${dependencyAlias(frameworkModuleId)}.default.createReactivePageVm`
   return linkMethods.length === 0
-    ? `__qak_reactive_page_vm__(${target}, context, { ${bindings.join(', ')} }, { ${blocks.join(', ')} })`
-    : `__qak_reactive_page_vm__((function () { const target = ${target}; ${linkMethods.join(' ')} return target; })(), context, { ${bindings.join(', ')} }, { ${blocks.join(', ')} })`
+    ? `${vmFactory}(${target}, context, { ${bindings.join(', ')} }, { ${blocks.join(', ')} })`
+    : `${vmFactory}((function () { const target = ${target}; ${linkMethods.join(' ')} return target; })(), context, { ${bindings.join(', ')} }, { ${blocks.join(', ')} })`
 }
 
 function printStaticContext(reference: CanonicalModuleReference, context: PrinterContext): string {
@@ -559,10 +596,11 @@ function bundlePath(module: CanonicalModuleEntry, page: CanonicalLoweredPageMode
   const hash = createHash('sha256').update(module.moduleId, 'utf8').digest('hex')
   return `shared/${hash}.js`
 }
-function createSourceMap(path: string, module: CanonicalModuleEntry, content: string, limits: EmitterLimits): { readonly path: string; readonly content: string } {
+function createSourceMap(path: string, module: CanonicalModuleEntry | undefined, content: string, limits: EmitterLimits): { readonly path: string; readonly content: string } {
   const mappings = content.split('\n').slice(0, -1).map(() => 'AAAA').join(';')
-  if (1 > limits.maxSourceMapSources || content.split('\n').length > limits.maxSourceMapSegments) throw new EmitterIssue(ErrorCodes.emitterSourceMapFailed, `Source Map budget exceeded: ${module.moduleId}`, module.source.sourcePath, module.source.span)
-  const value = { version: 3, file: path, sources: [module.source.sourcePath], names: [], mappings }
+  const sourcePath = module?.source.sourcePath ?? path
+  if (1 > limits.maxSourceMapSources || content.split('\n').length > limits.maxSourceMapSegments) throw new EmitterIssue(ErrorCodes.emitterSourceMapFailed, `Source Map budget exceeded: ${module?.moduleId ?? path}`, module?.source.sourcePath, module?.source.span)
+  const value = { version: 3, file: path, sources: [sourcePath], names: [], mappings }
   return Object.freeze({ path: `${path}.map`, content: `${JSON.stringify(value)}\n` })
 }
 function utf8ByteLength(value: string): number { return Buffer.byteLength(value, 'utf8') }

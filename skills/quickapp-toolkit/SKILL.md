@@ -206,15 +206,15 @@ it does not hand-write Page IR or RPK bytes.
 ```sh
 cd /Users/qy/code/my-github/quickapp-kit-ai/quickapp-toolkit
 npm run build
-node ../quickapp-examples/showcases/gallery-001/scripts/build-gallery.mjs
-unzip -t ../quickapp-examples/showcases/gallery-001/dist/gallery-001.rpk
+node ../quickapp-examples/baseline-cases/capability-gallery-001/scripts/build-capability-gallery.mjs
+unzip -t ../quickapp-examples/baseline-cases/capability-gallery-001/dist/capability-gallery-001.rpk
 ```
 
 The script writes:
 
 ```text
-../quickapp-examples/showcases/gallery-001/dist/gallery-001.rpk
-../quickapp-examples/showcases/gallery-001/dist/gallery-001.json
+../quickapp-examples/baseline-cases/capability-gallery-001/dist/capability-gallery-001.rpk
+../quickapp-examples/baseline-cases/capability-gallery-001/dist/capability-gallery-001.json
 ```
 
 The metadata JSON is the build report. The RPK is the runtime input. `unzip -t`

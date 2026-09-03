@@ -54,6 +54,7 @@ export interface RuntimeArtifactRequest {
   readonly schemaValidator: ArtifactSchemaValidator
   readonly cancellation: CancellationToken
   readonly limits?: Partial<ArtifactLimits>
+  readonly framework?: { readonly moduleId: string; readonly path: string; readonly content: string; readonly sha256: string }
 }
 
 export interface ArtifactDescriptor {

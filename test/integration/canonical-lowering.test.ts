@@ -89,7 +89,7 @@ test('TK-S04 Case 002 lowers if and keyed for with nearest Block scope', async (
 })
 
 test('TK-S13 list-001 lowers explicit List/Scroll and scroll handlers', async () => {
-  const { result, dispose } = await buildCase('showcases/list-001')
+  const { result, dispose } = await buildCase('baseline-cases/list-001')
   try {
     const lowered = lower(result)
     assert.equal(lowered.status, 'success')
@@ -108,7 +108,7 @@ test('TK-S13 list-001 lowers explicit List/Scroll and scroll handlers', async ()
 })
 
 test('TK-S14 media-001 lowers Video props and lifecycle handlers', async () => {
-  const { result, dispose } = await buildCase('showcases/media-001')
+  const { result, dispose } = await buildCase('baseline-cases/media-001')
   try {
     const lowered = lower(result)
     assert.equal(lowered.status, 'success')
@@ -131,7 +131,7 @@ test('TK-S14 media-001 lowers Video props and lifecycle handlers', async () => {
 })
 
 test('TK-S15 url-001 lowers internal, external and webview links', async () => {
-  const { result, dispose } = await buildCase('showcases/url-001')
+  const { result, dispose } = await buildCase('baseline-cases/url-001')
   try {
     const lowered = lower(result)
     assert.equal(lowered.status, 'success')
@@ -161,7 +161,7 @@ test('TK-S15 url-001 lowers internal, external and webview links', async () => {
 })
 
 test('TK-S16 tabs-001 lowers controlled Tabs and selected binding', async () => {
-  const { result, dispose } = await buildCase('showcases/tabs-001')
+  const { result, dispose } = await buildCase('baseline-cases/tabs-001')
   try {
     const lowered = lower(result)
     assert.equal(lowered.status, 'success')
@@ -180,7 +180,7 @@ test('TK-S16 tabs-001 lowers controlled Tabs and selected binding', async () => 
 })
 
 test('TK-S17 commerce-001 preserves selectedTab dependencies for all if blocks', async () => {
-  const { result, dispose } = await buildCase('showcases/commerce-001')
+  const { result, dispose } = await buildCase('showcases/shop')
   try {
     const lowered = lower(result)
     assert.equal(lowered.status, 'success')
@@ -351,7 +351,7 @@ function lower(result: GraphBuildResult, limits?: Readonly<Record<string, number
     } })
 }
 
-async function buildCase(caseName: 'alliance-hap-case001' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'showcases/list-001' | 'showcases/media-001' | 'showcases/url-001' | 'showcases/tabs-001' | 'showcases/commerce-001'): Promise<{ result: GraphBuildResult; dispose(): void }> {
+async function buildCase(caseName: 'alliance-hap-case001' | 'quickapp-code-test2' | 'quickapp-code-test5' | 'baseline-cases/list-001' | 'baseline-cases/media-001' | 'baseline-cases/url-001' | 'baseline-cases/tabs-001' | 'showcases/shop'): Promise<{ result: GraphBuildResult; dispose(): void }> {
   const access = new SourceAccess(caseRoot(caseName), [])
   const manifest = await access.read('src/manifest.json', { content: 'strictUtf8', maxBytes: 2_000_000 })
   const result = await new ModuleGraphBuilder().build({

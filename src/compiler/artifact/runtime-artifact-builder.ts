@@ -42,6 +42,10 @@ export class RuntimeArtifactBuilder {
 function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits): RuntimeArtifact {
   validateInput(request.model, request.manifest, request.js.bundles, request.pageIr.pages, limits)
   const jsById = new Map(request.js.bundles.map((bundle) => [bundle.moduleId, bundle]))
+  if (request.framework !== undefined) {
+    const frameworkBundle = jsById.get(request.framework.moduleId)
+    if (frameworkBundle === undefined || frameworkBundle.moduleKind !== 'shared' || frameworkBundle.path !== request.framework.path || frameworkBundle.content !== request.framework.content || sha256(toBytes(request.framework.content)) !== request.framework.sha256) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, 'Framework bundle does not match the artifact request')
+  }
   const irByModuleId = new Map(request.pageIr.pages.map((page) => [page.moduleId, page]))
   const manifestPages = new Map(request.manifest.pages.map((page) => [page.manifestRoute, page]))
   const pages = [...request.model.pages].sort((left, right) => compareUtf8(left.manifestRoute, right.manifestRoute))
@@ -54,6 +58,8 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
     const bundle = requiredBundle(jsById, module)
     return { moduleId: module.moduleId, dependencies: [...bundle.dependencies], bundle: descriptor(bundle.path, 'application/javascript', bundle.content) }
   })
+  const extraShared = request.framework === undefined ? [] : [{ moduleId: request.framework.moduleId, dependencies: [], bundle: descriptor(request.framework.path, 'application/javascript', request.framework.content) }]
+  const allSharedDescriptors = [...sharedDescriptors, ...extraShared]
   const pageDescriptors = pages.map((page) => {
     const manifestPage = manifestPages.get(page.manifestRoute)
     const bundle = requiredBundle(jsById, page.module)
@@ -90,7 +96,7 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
     buildMode: request.buildMode,
     entryRoute: `/${request.manifest.entry}`,
     app: { moduleId: request.model.appModule.moduleId, dependencies: [...appBundle.dependencies], bundle: appDescriptor },
-    sharedModules: sharedDescriptors,
+    sharedModules: allSharedDescriptors,
     pages: pageDescriptors,
     resources: resources.map((resource) => resource.descriptor),
   }
@@ -108,6 +114,7 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
     member(RPK_RUNTIME_PATH, 'application/json', metadataBytes),
     member('app.js', 'application/javascript', toBytes(appBundle.content)),
     ...sharedDescriptors.map((entry) => member(entry.bundle.path, 'application/javascript', toBytes(requiredBundle(jsById, findModule(request.model, entry.moduleId)).content))),
+    ...extraShared.map((entry) => member(entry.bundle.path, 'application/javascript', toBytes(request.framework?.content ?? ''))),
     ...pageDescriptors.flatMap((page) => [
       member(page.bundle.path, 'application/javascript', toBytes(requiredBundle(jsById, findModule(request.model, page.moduleId)).content)),
       member(page.pageIr.path, 'application/json', toBytes(requiredPage(irByModuleId, page.moduleId).content)),
@@ -128,7 +135,8 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
 function validateInput(model: CanonicalLoweredAppModel, manifest: ResolvedManifest, bundles: readonly JsBundleArtifact[], pages: readonly PageIrArtifact[], limits: ArtifactLimits): void {
   if (model.modelVersion !== 1 || model.packageName !== manifest.packageName) throw new ArtifactIssue(ErrorCodes.artifactInputInvalid, 'Canonical model and verified Manifest identity differ')
   if (model.pages.length > limits.maxPages) throw new ArtifactIssue(ErrorCodes.artifactLimitExceeded, 'Page count exceeds the Core loading limit')
-  if (bundles.length !== 1 + model.sharedModules.length + model.pages.length || pages.length !== model.pages.length) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, 'S05/S06 output closure does not match the Canonical Lowered Model')
+  const frameworkBundles = bundles.filter((bundle) => bundle.moduleId === '@quickapp-kit/framework-v1')
+  if (bundles.length !== 1 + model.sharedModules.length + model.pages.length + (frameworkBundles.length > 0 ? 1 : 0) || pages.length !== model.pages.length) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, 'S05/S06 output closure does not match the Canonical Lowered Model')
   const ids = new Set<string>()
   for (const module of [model.appModule, ...model.sharedModules, ...model.pages.map((page) => page.module)]) {
     if (ids.has(module.moduleId)) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Duplicate moduleId: ${module.moduleId}`, module.source.sourcePath, module.source.span)
@@ -142,7 +150,10 @@ function validateInput(model: CanonicalLoweredAppModel, manifest: ResolvedManife
 function requiredBundle(index: ReadonlyMap<string, JsBundleArtifact>, module: CanonicalModuleEntry): JsBundleArtifact {
   const bundle = index.get(module.moduleId)
   if (bundle === undefined || bundle.moduleKind !== module.moduleKind) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Missing Bundle for module: ${module.moduleId}`, module.source.sourcePath, module.source.span)
-  if (JSON.stringify(bundle.dependencies) !== JSON.stringify(module.dependencies)) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Bundle dependencies differ from the Canonical package graph: ${module.moduleId}`, module.source.sourcePath, module.source.span)
+  const expected = module.moduleKind === 'page' && bundle.dependencies.includes('@quickapp-kit/framework-v1')
+    ? [...new Set([...module.dependencies, '@quickapp-kit/framework-v1'])].sort(compareUtf8)
+    : module.dependencies
+  if (JSON.stringify(bundle.dependencies) !== JSON.stringify(expected)) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Bundle dependencies differ from the Canonical package graph: ${module.moduleId}`, module.source.sourcePath, module.source.span)
   return bundle
 }
 

@@ -1,5 +1,16 @@
+
+// 先注册依赖
 $app_define$("@quickapp-kit/page/pages/Detail", [], function ($app_require$, module, exports) {
   const router = $app_require$("@app-module/system.router").default;
+  // 把页面初始数据包装成可观察的 Page VM，并建立“状态变化 -> Binding 更新 -> 渲染提交”的闭环。
+  /**
+   * 
+    创建 Proxy
+    -> 捕获 state 写入
+    -> 标记相关 Binding / Block 为 dirty
+    -> 注册一次 render microtask
+    -> flush 时生成 RenderIntentTransaction
+   */
   const __qak_reactive_page_vm__ = function (target, context, bindings) {
     let scheduled = false;
     let revision = 0;
@@ -76,13 +87,39 @@ $app_define$("@quickapp-kit/page/pages/Detail", [], function ($app_require$, mod
       const result = globalThis.$quickapp_runtime_v1_submitRenderTransaction$(message);
       if (result && result.ok === true) { revision = nextRevision; dirty.clear(); commitBlocks(blocks.nextBlocks, blocks.nextSlots); }
     };
+    // 用 Proxy 包装页面原始对象，得到响应式 Page VM
     proxy = new Proxy(target, {
+      // 拦截 this.xxx = value
       set: function (object, property, value) {
+        // 先把新值写入原始页面对象
         object[property] = value;
+
+        // 把属性名统一转成字符串，例如 "title"
         const name = String(property);
-        Object.keys(bindings).forEach(function (id) { if (bindings[id].deps.indexOf(name) >= 0) dirty.add(id); });
-        Object.keys(blockDefinitions).forEach(function (id) { if (blockDefinitions[id].deps.indexOf(name) >= 0) dirty.add("__qak_block__"); });
-        if (!scheduled) { scheduled = true; Promise.resolve().then(flush); }
+
+        // 找出依赖该状态属性的 Binding，并标记为待更新
+        Object.keys(bindings).forEach(function (id) {
+          if (bindings[id].deps.indexOf(name) >= 0) {
+            dirty.add(id);
+          }
+        });
+
+        // 如果该状态影响 if/for，则标记动态结构需要重新计算
+        Object.keys(blockDefinitions).forEach(function (id) {
+          if (blockDefinitions[id].deps.indexOf(name) >= 0) {
+            dirty.add("__qak_block__");
+          }
+        });
+
+        // 同一轮多次状态写入只安排一次 flush
+        if (!scheduled) {
+          scheduled = true;
+
+          // 当前 JS task 结束后执行渲染微任务
+          Promise.resolve().then(flush);
+        }
+
+        // 告诉 Proxy：本次赋值成功
         return true;
       }
     });
@@ -94,6 +131,7 @@ $app_define$("@quickapp-kit/page/pages/Detail", [], function ($app_require$, mod
   module.exports = {
     schemaVersion: 1,
     kind: "page",
+    // target 就是页面原始对象，也就是 .ux 中 <script> 导出的页面定义实例
     createPageVm: function (context) { return __qak_reactive_page_vm__({ onBack() { router.back(); } }, context, {  }, {  }); },
     bindingEvaluators: {
     },
@@ -102,4 +140,6 @@ $app_define$("@quickapp-kit/page/pages/Detail", [], function ($app_require$, mod
     },
   };
 });
+
+// 再启动当前页面
 $app_bootstrap$("@quickapp-kit/page/pages/Detail", {"schemaVersion":1,"kind":"page","moduleId":"@quickapp-kit/page/pages/Detail","templateId":"page:/pages/Detail"});
