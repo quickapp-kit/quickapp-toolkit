@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { ErrorCodes } from '../../diagnostics/error-codes.js'
+import { ArtifactPaths } from '../artifact-paths.js'
 import { sortDiagnostics, type Diagnostic } from '../../diagnostics/diagnostic.js'
 import { deepFreeze } from '../immutable.js'
 import { assertDeepFrozen } from '../lowering/syntax.js'
@@ -9,7 +10,6 @@ import type { JsBundleArtifact, PageIrArtifact } from '../emitter/types.js'
 import { ArtifactIssue } from './artifact-issue.js'
 import { DEFAULT_ARTIFACT_LIMITS, type ArtifactDescriptor, type ArtifactLimits, type RuntimeArtifact, type RuntimeArtifactRequest, type RuntimeArtifactResult, type RuntimeMetadata, type RuntimeResourceInput, type RuntimeRpkMember } from './types.js'
 
-const RPK_RUNTIME_PATH = 'quickapp-kit/runtime.json'
 const FIXED_VERSION = {
   packageFormat: 'quickapp-kit-rpk-v1' as const,
   runtimeAbi: 'quickapp-kit-runtime-v1' as const,
@@ -51,7 +51,7 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
   const pages = [...request.model.pages].sort((left, right) => compareUtf8(left.manifestRoute, right.manifestRoute))
   const shared = [...request.model.sharedModules].sort((left, right) => compareUtf8(left.moduleId, right.moduleId))
   const appBundle = requiredBundle(jsById, request.model.appModule)
-  const appDescriptor = descriptor('app.js', 'application/javascript', appBundle.content)
+  const appDescriptor = descriptor(ArtifactPaths.appBundle, 'application/javascript', appBundle.content)
   if (appBundle.path !== appDescriptor.path) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, 'App Bundle path is not the Runtime Artifact path', appBundle.moduleId, undefined)
 
   const sharedDescriptors = shared.map((module) => {
@@ -65,8 +65,8 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
     const bundle = requiredBundle(jsById, page.module)
     const ir = irByModuleId.get(page.moduleId)
     if (manifestPage === undefined || ir === undefined) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Page relation is incomplete: ${page.manifestRoute}`, page.module.source.sourcePath, page.module.source.span)
-    if (bundle.path !== `pages/${page.manifestRoute}/index.js`) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Page Bundle path is invalid: ${bundle.path}`, page.module.source.sourcePath, page.module.source.span)
-    if (ir.path !== `quickapp-kit/pages/${page.manifestRoute}/index.ir.json` || ir.templateId !== page.templateId) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Page IR relation is invalid: ${page.manifestRoute}`, page.module.source.sourcePath, page.module.source.span)
+    if (bundle.path !== ArtifactPaths.pageBundle(page.manifestRoute)) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Page Bundle path is invalid: ${bundle.path}`, page.module.source.sourcePath, page.module.source.span)
+    if (ir.path !== ArtifactPaths.pageIr(page.manifestRoute) || ir.templateId !== page.templateId) throw new ArtifactIssue(ErrorCodes.artifactRelationInvalid, `Page IR relation is invalid: ${page.manifestRoute}`, page.module.source.sourcePath, page.module.source.span)
     if (utf8ByteLength(ir.content) > limits.maxPageIrBytes) throw new ArtifactIssue(ErrorCodes.artifactLimitExceeded, `Page IR exceeds the Core loading limit: ${page.manifestRoute}`, page.module.source.sourcePath, page.module.source.span)
     return {
       route: page.route,
@@ -110,9 +110,9 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
   if (manifestBytes.length > limits.maxManifestBytes) throw new ArtifactIssue(ErrorCodes.artifactLimitExceeded, 'Manifest exceeds the Core loading limit')
 
   const members: RuntimeRpkMember[] = [
-    member('manifest.json', 'application/json', manifestBytes),
-    member(RPK_RUNTIME_PATH, 'application/json', metadataBytes),
-    member('app.js', 'application/javascript', toBytes(appBundle.content)),
+    member(ArtifactPaths.manifest, 'application/json', manifestBytes),
+    member(ArtifactPaths.runtimeMetadata, 'application/json', metadataBytes),
+    member(ArtifactPaths.appBundle, 'application/javascript', toBytes(appBundle.content)),
     ...sharedDescriptors.map((entry) => member(entry.bundle.path, 'application/javascript', toBytes(requiredBundle(jsById, findModule(request.model, entry.moduleId)).content))),
     ...extraShared.map((entry) => member(entry.bundle.path, 'application/javascript', toBytes(request.framework?.content ?? ''))),
     ...pageDescriptors.flatMap((page) => [
@@ -120,7 +120,7 @@ function buildArtifact(request: RuntimeArtifactRequest, limits: ArtifactLimits):
       member(page.pageIr.path, 'application/json', toBytes(requiredPage(irByModuleId, page.moduleId).content)),
     ]),
     ...resources.map((resource) => member(resource.descriptor.path, resource.descriptor.mediaType, resource.bytes)),
-    ...request.js.bundles.map((bundle) => member(`META-INF/quickapp-kit/source-maps/${bundle.path}.map`, 'application/json', toBytes(bundle.sourceMap.content))),
+    ...request.js.bundles.map((bundle) => member(bundle.sourceMap.path, 'application/json', toBytes(bundle.sourceMap.content))),
   ]
   const packageMembers = uniqueMembers(members, limits)
   const packageBytes = makeZip(packageMembers, limits)

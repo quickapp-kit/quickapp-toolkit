@@ -1,4 +1,5 @@
 import { ErrorCodes } from '../../diagnostics/error-codes.js'
+import { ArtifactPaths } from '../artifact-paths.js'
 import { sortDiagnostics, type Diagnostic } from '../../diagnostics/diagnostic.js'
 import { deepFreeze } from '../immutable.js'
 import { assertDeepFrozen } from '../lowering/syntax.js'
@@ -39,7 +40,7 @@ export class PageIrEmitter {
           if (work > limits.maxGeneratedNodes) fail(ErrorCodes.emitterIrLimitExceeded, 'Page IR work exceeds emitter limit')
           request.cancellation.throwIfCancelled()
         })
-        const path = `quickapp-kit/pages/${page.manifestRoute}/index.ir.json`
+        const path = ArtifactPaths.pageIr(page.manifestRoute)
         if (artifacts.some((artifact) => artifact.path === path)) fail(ErrorCodes.emitterIrInputInvalid, `Page IR path collision: ${path}`, page.module.source)
         const content = `${JSON.stringify(projection)}\n`
         if (utf8ByteLength(content) > limits.maxGeneratedBytes) fail(ErrorCodes.emitterIrLimitExceeded, 'Page IR output exceeds emitter byte limit', page.module.source)

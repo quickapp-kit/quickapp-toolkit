@@ -26,7 +26,7 @@ test('TK-S05/TK-S06 Case 001 emit one ABI-consistent JS set and valid Page IR', 
     for (const bundle of js.bundles) {
       parse(bundle.content, { ecmaVersion: 'latest', sourceType: 'script' })
       assert.equal(bundle.content.endsWith('\n'), true)
-      assert.equal(bundle.sourceMap.path, `${bundle.path}.map`)
+      assert.equal(bundle.sourceMap.path, `META-INF/source-maps/${bundle.path}.map`)
       assert.deepEqual(readDefineDependencies(bundle.content), bundle.dependencies)
       assert.equal(bundle.dependencies.includes(bundle.moduleId), false)
       assert.equal(bundle.dependencies.every((dependency) => packageIds.has(dependency)), true)

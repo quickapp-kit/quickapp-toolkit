@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { ErrorCodes } from '../../diagnostics/error-codes.js'
+import { ArtifactPaths } from '../artifact-paths.js'
 import { sortDiagnostics, type Diagnostic } from '../../diagnostics/diagnostic.js'
 import { assertDeepFrozen, booleanField, countSyntaxNodes, nodeArray, nodeField, propertyName, stringField } from '../lowering/syntax.js'
 import type {
@@ -46,7 +47,7 @@ export class JsModuleEmitter {
       if (modules.length > limits.maxBundles) throw new EmitterIssue(ErrorCodes.emitterLimitExceeded, 'Bundle count exceeds emitter limit')
       const bundles: JsBundleArtifact[] = []
       if (request.framework !== undefined) {
-        const frameworkPath = `framework/${request.framework.moduleId.replace(/[^A-Za-z0-9_.-]/g, '_')}.js`
+        const frameworkPath = ArtifactPaths.frameworkBundle(request.framework.moduleId)
         const frameworkMap = createSourceMap(frameworkPath, undefined, request.framework.content, limits)
         bundles.push(Object.freeze({ moduleId: request.framework.moduleId, moduleKind: 'shared', dependencies: Object.freeze([]), path: frameworkPath, content: request.framework.content, sourceMap: frameworkMap }))
       }
@@ -588,20 +589,19 @@ function literalText(node: SyntaxNode, context: PrinterContext): string {
 function quote(value: string): string { return JSON.stringify(value) }
 function unsupported(node: SyntaxNode, context: PrinterContext): EmitterIssue { return new EmitterIssue(ErrorCodes.emitterJsUnsupported, `Unsupported JavaScript syntax: ${node.type}`, context.module.source.sourcePath, node.span) }
 function bundlePath(module: CanonicalModuleEntry, page: CanonicalLoweredPageModel | undefined): string {
-  if (module.moduleKind === 'app') return 'app.js'
+  if (module.moduleKind === 'app') return ArtifactPaths.appBundle
   if (module.moduleKind === 'page') {
     if (page === undefined) throw new EmitterIssue(ErrorCodes.emitterAbiInvalid, `Page is absent for module: ${module.moduleId}`, module.source.sourcePath, module.source.span)
-    return `pages/${page.manifestRoute}/index.js`
+    return ArtifactPaths.pageBundle(page.manifestRoute)
   }
-  const hash = createHash('sha256').update(module.moduleId, 'utf8').digest('hex')
-  return `shared/${hash}.js`
+  return ArtifactPaths.sharedBundle(module.moduleId)
 }
 function createSourceMap(path: string, module: CanonicalModuleEntry | undefined, content: string, limits: EmitterLimits): { readonly path: string; readonly content: string } {
   const mappings = content.split('\n').slice(0, -1).map(() => 'AAAA').join(';')
   const sourcePath = module?.source.sourcePath ?? path
   if (1 > limits.maxSourceMapSources || content.split('\n').length > limits.maxSourceMapSegments) throw new EmitterIssue(ErrorCodes.emitterSourceMapFailed, `Source Map budget exceeded: ${module?.moduleId ?? path}`, module?.source.sourcePath, module?.source.span)
   const value = { version: 3, file: path, sources: [sourcePath], names: [], mappings }
-  return Object.freeze({ path: `${path}.map`, content: `${JSON.stringify(value)}\n` })
+  return Object.freeze({ path: ArtifactPaths.sourceMap(path), content: `${JSON.stringify(value)}\n` })
 }
 function utf8ByteLength(value: string): number { return Buffer.byteLength(value, 'utf8') }
 function compareUtf8(left: string, right: string): number { return Buffer.from(left).compare(Buffer.from(right)) }
